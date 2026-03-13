@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Synorq Projects",
-  description: "Proje ve görev yönetim platformu — Synorq",
+  description: "Proje, ekip ve görev operasyonunu tek akışta yöneten Synorq Projects.",
 };
 
 export default function RootLayout({

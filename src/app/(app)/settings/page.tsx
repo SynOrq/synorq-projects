@@ -1,7 +1,8 @@
-import { auth } from "@/lib/auth";
+import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { Settings as SettingsIcon, User, Building, Palette } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Settings as SettingsIcon, User, Building, Palette, LogOut } from "lucide-react";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -12,6 +13,11 @@ export default async function SettingsPage() {
   });
 
   if (!workspace) redirect("/auth/login");
+
+  async function logoutAction() {
+    "use server";
+    await signOut({ redirectTo: "/auth/login" });
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
@@ -93,6 +99,21 @@ export default async function SettingsPage() {
             <button disabled className="bg-gray-100 text-gray-500 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 cursor-not-allowed">Açık Tema</button>
             <button disabled className="bg-gray-100 text-gray-500 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 cursor-not-allowed">Koyu Tema</button>
           </div>
+        </section>
+
+        <section className="bg-white rounded-2xl border border-red-100 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+            <LogOut size={20} className="text-red-600" /> Oturum
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Mevcut oturumu güvenli şekilde kapatıp giriş ekranına dönebilirsiniz.
+          </p>
+          <form action={logoutAction}>
+            <Button type="submit" variant="danger">
+              <LogOut size={15} />
+              Çıkış Yap
+            </Button>
+          </form>
         </section>
       </div>
     </div>

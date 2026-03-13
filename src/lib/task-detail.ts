@@ -15,11 +15,18 @@ export const taskCardInclude = {
 
 export const taskDetailInclude = {
   ...taskCardInclude,
+  attachments: {
+    orderBy: { createdAt: "desc" },
+  },
   comments: {
     orderBy: { createdAt: "asc" },
     include: {
       author: { select: taskUserSelect },
     },
+  },
+  subTasks: {
+    orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+    include: taskCardInclude,
   },
 } satisfies Prisma.TaskInclude;
 
@@ -48,9 +55,15 @@ export type TaskActivityChange = {
 
 export type TaskActivityMetadata = {
   taskId?: string;
+  attachmentId?: string;
   changes?: TaskActivityChange[];
   commentId?: string;
   fromSectionName?: string | null;
+  name?: string;
+  role?: string;
+  status?: string;
+  subTaskId?: string;
+  title?: string;
   toSectionName?: string | null;
 };
 
