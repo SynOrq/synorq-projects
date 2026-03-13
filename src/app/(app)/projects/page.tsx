@@ -11,10 +11,12 @@ import {
   CheckCircle2,
   Filter,
   FolderKanban,
+  LayoutPanelTop,
   PauseCircle,
   Plus,
   Search,
   TrendingUp,
+  Workflow,
 } from "lucide-react";
 
 const statusLabel: Record<string, { label: string; variant: "success" | "warning" | "secondary" | "danger" }> = {
@@ -128,24 +130,65 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
-            <TrendingUp size={13} />
-            Project Radar
-          </div>
-          <h1 className="mt-3 text-3xl font-black text-gray-900">Projeler</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {filteredProjects.length} sonuç • workspace portföyünüzü filtreleyin ve teslim risklerini görün.
-          </p>
-        </div>
+      <div className="relative overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_24px_80px_-55px_rgba(15,23,42,0.45)]">
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(99,102,241,0.06),rgba(6,182,212,0.04)_42%,transparent_70%)]" />
+        <div className="relative grid gap-8 px-6 py-7 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+              <LayoutPanelTop size={13} />
+              Synorq Projects
+            </div>
+            <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950">
+              Proje yurutme ve teslim gorunurlugunu tek operasyon yuzeyinde yonetin.
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
+              Synorq Projects, Synorq platformunun execution layer&apos;idir. Portfoy gorunurlugu, gorev sahipligi,
+              ekip koordinasyonu ve teslim riskini ayni calisma yuzeyinde toplar.
+            </p>
 
-        <Button asChild>
-          <Link href="/projects/new">
-            <Plus size={16} />
-            Yeni Proje
-          </Link>
-        </Button>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Button asChild>
+                <Link href="/projects/new">
+                  <Plus size={16} />
+                  Yeni Proje
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/products/projects">
+                  Modul Tanimini Gor
+                  <ArrowRight size={14} />
+                </Link>
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <TrendingUp size={13} className="text-indigo-600" />
+                Portfoy
+              </div>
+              <div className="mt-3 text-2xl font-black text-slate-950">{totalProjects}</div>
+              <div className="mt-1 text-xs text-slate-500">{activeProjects} aktif proje</div>
+            </div>
+            <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <AlertTriangle size={13} className="text-red-500" />
+                Risk
+              </div>
+              <div className="mt-3 text-2xl font-black text-slate-950">{overdueTasksTotal}</div>
+              <div className="mt-1 text-xs text-slate-500">geciken acik gorev</div>
+            </div>
+            <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <Workflow size={13} className="text-cyan-600" />
+                Ritim
+              </div>
+              <div className="mt-3 text-2xl font-black text-slate-950">%{averageCompletion}</div>
+              <div className="mt-1 text-xs text-slate-500">ortalama ilerleme</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
