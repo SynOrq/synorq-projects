@@ -24,8 +24,8 @@ export default async function MyTasksPage() {
     orderBy: [{ status: "asc" }, { priority: "desc" }, { createdAt: "desc" }],
   });
 
-  const activeTasks = tasks.filter((t: any) => t.status !== "DONE" && t.status !== "CANCELLED");
-  const completedTasks = tasks.filter((t: any) => t.status === "DONE");
+  const activeTasks = tasks.filter((task) => task.status !== "DONE" && task.status !== "CANCELLED");
+  const completedTasks = tasks.filter((task) => task.status === "DONE");
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
@@ -45,7 +45,7 @@ export default async function MyTasksPage() {
               <div className="p-8 text-center text-gray-500 text-sm">Harika! Aktif göreviniz yok.</div>
             ) : (
               <div className="divide-y divide-gray-100">
-                {activeTasks.map((task: any) => {
+                {activeTasks.map((task) => {
                   const sc = STATUS_CONFIG[task.status as keyof typeof STATUS_CONFIG];
                   const pc = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG];
                   return (
@@ -88,7 +88,7 @@ export default async function MyTasksPage() {
               <div className="p-8 text-center text-gray-500 text-sm">Henüz tamamlanan görev yok.</div>
             ) : (
               <div className="divide-y divide-gray-100 opacity-75">
-                {completedTasks.map((task: any) => {
+                {completedTasks.map((task) => {
                   const sc = STATUS_CONFIG[task.status as keyof typeof STATUS_CONFIG];
                   return (
                     <Link

@@ -2,9 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { formatRelative } from "@/lib/utils";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "@/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FolderKanban, CheckSquare, Clock, TrendingUp, Plus, ArrowRight } from "lucide-react";
 

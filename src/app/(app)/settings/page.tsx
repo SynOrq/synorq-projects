@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { Settings as SettingsIcon, User, Building, Palette, Activity } from "lucide-react";
+import { Settings as SettingsIcon, User, Building, Palette } from "lucide-react";
 
 export default async function SettingsPage() {
   const session = await auth();

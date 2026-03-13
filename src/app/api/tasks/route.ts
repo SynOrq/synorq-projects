@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { taskCardInclude } from "@/lib/task-detail";
 
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
 
-    const { projectId, sectionId, title, creatorId } = await req.json();
+    const { projectId, sectionId, title } = await req.json();
     if (!title?.trim()) return NextResponse.json({ error: "Başlık zorunludur." }, { status: 400 });
 
     // Verify access
@@ -30,9 +31,19 @@ export async function POST(req: NextRequest) {
         creatorId: session.user.id,
         order: (lastTask?.order ?? -1) + 1,
       },
-      include: {
-        assignee: { select: { id: true, name: true, image: true } },
-        creator:  { select: { id: true, name: true } },
+      include: taskCardInclude,
+    });
+
+    await db.activityLog.create({
+      data: {
+        workspaceId: project.workspaceId,
+        projectId: project.id,
+        userId: session.user.id,
+        action: "task.created",
+        metadata: {
+          taskId: task.id,
+          toSectionName: null,
+        },
       },
     });
 

@@ -5,8 +5,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, FolderKanban, ArrowRight } from "lucide-react";
-import { formatDate } from "@/lib/utils";
-import { PROJECT_COLORS } from "@/types";
 
 const statusLabel: Record<string, { label: string; variant: "success" | "warning" | "secondary" | "danger" }> = {
   ACTIVE:    { label: "Aktif",     variant: "success" },

@@ -36,7 +36,7 @@ export default async function MembersPage() {
             <Users className="text-emerald-600" />
             Ekip Üyeleri
           </h1>
-          <p className="text-gray-500 text-sm mt-1">Workspace'teki tüm üyeler ({workspace.members.length})</p>
+          <p className="text-gray-500 text-sm mt-1">Workspace&apos;teki tüm üyeler ({workspace.members.length})</p>
         </div>
         <button className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">
           <UserPlus size={16} />
@@ -56,7 +56,7 @@ export default async function MembersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {workspace.members.map((member: any) => {
+              {workspace.members.map((member: (typeof workspace.members)[number]) => {
                 const rc = roles[member.role] || roles.MEMBER;
                 return (
                   <tr key={member.id} className="hover:bg-gray-50/50 transition-colors">

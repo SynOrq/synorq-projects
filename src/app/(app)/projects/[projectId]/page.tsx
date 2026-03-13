@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { taskCardInclude } from "@/lib/task-detail";
 import { redirect, notFound } from "next/navigation";
 import KanbanBoard from "@/components/projects/KanbanBoard";
 import ProjectHeader from "@/components/projects/ProjectHeader";
@@ -24,11 +25,7 @@ export default async function ProjectPage({
         include: {
           tasks: {
             orderBy: { order: "asc" },
-            include: {
-              assignee: { select: { id: true, name: true, image: true } },
-              creator:  { select: { id: true, name: true } },
-              _count:   { select: { comments: true, subTasks: true } },
-            },
+            include: taskCardInclude,
           },
         },
       },
@@ -50,7 +47,6 @@ export default async function ProjectPage({
           project={project}
           sections={project.sections}
           members={members.map((m) => m.user)}
-          currentUserId={session.user.id}
         />
       </div>
     </div>

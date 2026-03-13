@@ -5,32 +5,25 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { Plus, MoreHorizontal, MessageSquare, GitBranch, Calendar } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 import { Avatar } from "@/components/ui/avatar";
-import { PRIORITY_CONFIG, STATUS_CONFIG } from "@/types";
 import TaskModal from "@/components/tasks/TaskModal";
-import type { Project, Section, Task, User } from "@prisma/client";
+import type { TaskCardData } from "@/lib/task-detail";
+import type { Project, Section, User } from "@prisma/client";
 
-type TaskWithRelations = Task & {
-  assignee: Pick<User, "id" | "name" | "image"> | null;
-  creator: Pick<User, "id" | "name">;
-  _count: { comments: number; subTasks: number };
-};
-
-type SectionWithTasks = Section & { tasks: TaskWithRelations[] };
+type SectionWithTasks = Section & { tasks: TaskCardData[] };
 
 interface Props {
   project: Project;
   sections: SectionWithTasks[];
   members: Pick<User, "id" | "name" | "image" | "email">[];
-  currentUserId: string;
 }
 
 const PRIORITY_DOT: Record<string, string> = {
   LOW: "bg-slate-400", MEDIUM: "bg-blue-500", HIGH: "bg-orange-500", URGENT: "bg-red-500",
 };
 
-export default function KanbanBoard({ project, sections: initialSections, members, currentUserId }: Props) {
+export default function KanbanBoard({ project, sections: initialSections, members }: Props) {
   const [sections, setSections] = useState(initialSections);
-  const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskCardData | null>(null);
   const [addingSection, setAddingSection] = useState<string | null>(null); // sectionId
   const [newTaskTitle, setNewTaskTitle] = useState("");
 
@@ -86,7 +79,6 @@ export default function KanbanBoard({ project, sections: initialSections, member
         projectId: project.id,
         sectionId,
         title: newTaskTitle.trim(),
-        creatorId: currentUserId,
       }),
     });
     if (res.ok) {
@@ -256,7 +248,19 @@ export default function KanbanBoard({ project, sections: initialSections, member
                 tasks: s.tasks.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
               }))
             );
-            setSelectedTask(null);
+            setSelectedTask(updated);
+          }}
+          onCommentAdded={(taskId) => {
+            setSections((prev) =>
+              prev.map((section) => ({
+                ...section,
+                tasks: section.tasks.map((task) =>
+                  task.id === taskId
+                    ? { ...task, _count: { ...task._count, comments: task._count.comments + 1 } }
+                    : task
+                ),
+              }))
+            );
           }}
         />
       )}
