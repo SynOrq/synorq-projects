@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BellRing,
   LayoutDashboard,
   FolderKanban,
   CheckSquare,
@@ -17,12 +18,13 @@ import type { Session } from "next-auth";
 
 interface SidebarProps {
   session: Session;
-  workspace: { id: string; name: string; slug: string } | null;
+  workspace: { id: string; name: string; slug: string; logoUrl?: string | null } | null;
   projects: Array<{ id: string; name: string; color: string }>;
 }
 
 const navItems = [
   { href: "/dashboard",  icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/notifications", icon: BellRing, label: "Bildirimler" },
   { href: "/projects",   icon: FolderKanban,    label: "Projeler" },
   { href: "/my-tasks",   icon: CheckSquare,     label: "Görevlerim" },
   { href: "/members",    icon: Users,           label: "Ekip" },
@@ -36,11 +38,18 @@ export default function Sidebar({ session, workspace, projects }: SidebarProps) 
     <aside className="sticky top-0 flex h-screen w-60 flex-shrink-0 flex-col border-r border-slate-200 bg-white/95 backdrop-blur">
       <div className="border-b border-slate-200 p-4">
         <button className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 transition-colors hover:bg-slate-50">
-          <div
-            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
-            style={{ background: "linear-gradient(135deg,#7C3AED,#3B82F6)" }}
-          >
-            {workspace?.name?.[0]?.toUpperCase() ?? "S"}
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+            {workspace?.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={workspace.logoUrl} alt={workspace.name} className="h-full w-full object-cover" />
+            ) : (
+              <div
+                className="flex h-full w-full items-center justify-center text-xs font-bold text-white"
+                style={{ background: "linear-gradient(135deg,#7C3AED,#3B82F6)" }}
+              >
+                {workspace?.name?.[0]?.toUpperCase() ?? "S"}
+              </div>
+            )}
           </div>
           <div className="min-w-0 flex-1 text-left">
             <div className="truncate text-sm font-semibold text-slate-950">

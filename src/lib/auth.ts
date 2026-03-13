@@ -46,10 +46,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) token.id = user.id;
+
+      if (token?.id) {
+        const freshUser = await db.user.findUnique({
+          where: { id: token.id as string },
+          select: { name: true, email: true, image: true },
+        });
+
+        if (freshUser) {
+          token.name = freshUser.name;
+          token.email = freshUser.email;
+          token.picture = freshUser.image;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (token?.id) session.user.id = token.id as string;
+      if (session.user) {
+        session.user.name = typeof token.name === "string" ? token.name : session.user.name;
+        session.user.email = typeof token.email === "string" ? token.email : session.user.email;
+        session.user.image = typeof token.picture === "string" ? token.picture : session.user.image;
+      }
       return session;
     },
   },

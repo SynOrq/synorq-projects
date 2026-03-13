@@ -18,6 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       id: true,
       name: true,
       slug: true,
+      logoUrl: true,
       _count: { select: { members: true, projects: true } },
     },
   });
