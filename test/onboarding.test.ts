@@ -12,11 +12,12 @@ test("buildOnboardingChecklist computes progress and next step", () => {
     taskCount: 0,
     reportsReady: true,
     weeklyDigestEnabled: false,
+    hasSavedProjectView: false,
   });
 
   assert.equal(onboarding.completed, 2);
-  assert.equal(onboarding.total, 6);
-  assert.equal(onboarding.progress, 33);
+  assert.equal(onboarding.total, 7);
+  assert.equal(onboarding.progress, 29);
   assert.equal(onboarding.nextItem?.id, "workspace");
 });
 

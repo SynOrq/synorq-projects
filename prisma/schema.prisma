@@ -357,6 +357,7 @@ model WorkspaceUserState {
   riskAlertsEnabled    Boolean   @default(true)
   activityAlertsEnabled Boolean  @default(true)
   weeklyDigestEnabled  Boolean   @default(false)
+  savedProjectsView    Json?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 

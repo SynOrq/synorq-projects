@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { buildDemoWorkspaceState, buildOnboardingChecklist } from "@/lib/onboarding";
 import { analyzeProjects, type PortfolioProject } from "@/lib/portfolio";
+import { normalizeSavedProjectsView } from "@/lib/projects-saved-view";
 import { findWorkspaceState } from "@/lib/workspace-state";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,7 @@ export default async function OnboardingPage() {
       userId,
       includeOnboarding: true,
       includePreferences: true,
+      includeProjectView: true,
     }),
     db.activityLog.count({
       where: { workspaceId: workspace.id },
@@ -105,6 +107,7 @@ export default async function OnboardingPage() {
     taskCount,
     reportsReady: workspace._count.projects > 0,
     weeklyDigestEnabled: workspaceState?.weeklyDigestEnabled ?? false,
+    hasSavedProjectView: Boolean(normalizeSavedProjectsView(workspaceState?.savedProjectsView ?? null).data),
   });
 
   const starterActions = [

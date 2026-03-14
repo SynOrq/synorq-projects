@@ -218,6 +218,13 @@ async function seed() {
       riskAlertsEnabled: true,
       activityAlertsEnabled: true,
       weeklyDigestEnabled: true,
+      savedProjectsView: {
+        label: "Riskte olanlar",
+        status: "ALL",
+        health: "risk",
+        view: "table",
+        q: null,
+      },
     },
     create: {
       workspaceId: workspace.id,
@@ -225,6 +232,13 @@ async function seed() {
       riskAlertsEnabled: true,
       activityAlertsEnabled: true,
       weeklyDigestEnabled: true,
+      savedProjectsView: {
+        label: "Riskte olanlar",
+        status: "ALL",
+        health: "risk",
+        view: "table",
+        q: null,
+      },
     },
   });
 

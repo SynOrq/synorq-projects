@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { normalizeSavedProjectsView } from "@/lib/projects-saved-view";
 import { upsertWorkspaceState } from "@/lib/workspace-state";
 
 export async function PATCH(req: NextRequest) {
@@ -28,6 +29,7 @@ export async function PATCH(req: NextRequest) {
       riskAlertsEnabled?: boolean;
       activityAlertsEnabled?: boolean;
       weeklyDigestEnabled?: boolean;
+      savedProjectsView?: unknown;
     } = {};
 
     if (body.markNotificationsRead) {
@@ -55,6 +57,16 @@ export async function PATCH(req: NextRequest) {
     if (typeof body.weeklyDigestEnabled === "boolean") {
       updates.weeklyDigestEnabled = body.weeklyDigestEnabled;
       preferenceKeys.push("weeklyDigestEnabled");
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, "savedProjectsView")) {
+      const result = normalizeSavedProjectsView(body.savedProjectsView);
+      if (result.error) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+
+      updates.savedProjectsView = result.data;
+      preferenceKeys.push("savedProjectsView");
     }
 
     if (Object.keys(updates).length === 0) {

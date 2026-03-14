@@ -57,7 +57,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [ ] notification rule controls
 - [ ] Projects portfolio ikinci iterasyon
   - [x] owner/client/type alanlari gosterilecek
-  - [ ] saved views kalici hale getirilecek
+  - [x] saved views kalici hale getirilecek
   - [ ] portfolio risk trend
   - [ ] owner-based distribution
   - [x] milestone progress
@@ -134,7 +134,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] demo workspace state
   - [x] create-first-project flow
   - [x] add-team-member flow
-  - [ ] save-first-view flow
+  - [x] save-first-view flow
 - [ ] Global command/search center
   - [x] project search
   - [x] task search

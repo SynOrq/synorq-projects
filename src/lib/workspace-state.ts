@@ -6,6 +6,7 @@ type WorkspaceStateRecord = {
   riskAlertsEnabled?: boolean;
   activityAlertsEnabled?: boolean;
   weeklyDigestEnabled?: boolean;
+  savedProjectsView?: unknown;
 };
 
 type WorkspaceStateDelegate = {
@@ -22,6 +23,7 @@ type WorkspaceStateDelegate = {
       riskAlertsEnabled?: true;
       activityAlertsEnabled?: true;
       weeklyDigestEnabled?: true;
+      savedProjectsView?: true;
     };
   }) => Promise<WorkspaceStateRecord | null>;
   upsert: (args: {
@@ -37,6 +39,7 @@ type WorkspaceStateDelegate = {
       riskAlertsEnabled?: boolean;
       activityAlertsEnabled?: boolean;
       weeklyDigestEnabled?: boolean;
+      savedProjectsView?: unknown;
     };
     create: {
       workspaceId: string;
@@ -46,6 +49,7 @@ type WorkspaceStateDelegate = {
       riskAlertsEnabled?: boolean;
       activityAlertsEnabled?: boolean;
       weeklyDigestEnabled?: boolean;
+      savedProjectsView?: unknown;
     };
     select: {
       notificationsReadAt?: true;
@@ -53,6 +57,7 @@ type WorkspaceStateDelegate = {
       riskAlertsEnabled?: true;
       activityAlertsEnabled?: true;
       weeklyDigestEnabled?: true;
+      savedProjectsView?: true;
     };
   }) => Promise<WorkspaceStateRecord>;
 };
@@ -66,6 +71,7 @@ export async function findWorkspaceState(params: {
   userId: string;
   includeOnboarding?: boolean;
   includePreferences?: boolean;
+  includeProjectView?: boolean;
 }) {
   const delegate = getWorkspaceStateDelegate();
   if (!delegate) return null;
@@ -87,6 +93,7 @@ export async function findWorkspaceState(params: {
             weeklyDigestEnabled: true,
           }
         : {}),
+      ...(params.includeProjectView ? { savedProjectsView: true } : {}),
     },
   });
 }
@@ -100,6 +107,7 @@ export async function upsertWorkspaceState(params: {
     riskAlertsEnabled?: boolean;
     activityAlertsEnabled?: boolean;
     weeklyDigestEnabled?: boolean;
+    savedProjectsView?: unknown;
   };
 }) {
   const delegate = getWorkspaceStateDelegate();
@@ -124,6 +132,7 @@ export async function upsertWorkspaceState(params: {
       riskAlertsEnabled: true,
       activityAlertsEnabled: true,
       weeklyDigestEnabled: true,
+      savedProjectsView: true,
     },
   });
 }

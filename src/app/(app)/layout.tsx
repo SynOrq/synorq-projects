@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { buildOnboardingChecklist } from "@/lib/onboarding";
+import { normalizeSavedProjectsView } from "@/lib/projects-saved-view";
 import { formatRelative } from "@/lib/utils";
 import { findWorkspaceState } from "@/lib/workspace-state";
 import AppTopbar from "@/components/layout/AppTopbar";
@@ -101,10 +102,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const workspaceState = workspace
     ? await findWorkspaceState({
         workspaceId: workspace.id,
-        userId,
-        includeOnboarding: true,
-        includePreferences: true,
-      })
+      userId,
+      includeOnboarding: true,
+      includePreferences: true,
+      includeProjectView: true,
+    })
     : null;
 
   const now = new Date();
@@ -148,6 +150,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     taskCount,
     reportsReady: projects.length > 0,
     weeklyDigestEnabled: workspaceState?.weeklyDigestEnabled ?? false,
+    hasSavedProjectView: Boolean(normalizeSavedProjectsView(workspaceState?.savedProjectsView ?? null).data),
   });
 
   return (

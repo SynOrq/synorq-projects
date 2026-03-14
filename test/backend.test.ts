@@ -5,3 +5,4 @@ import "./team-capacity.test.ts";
 import "./reports.test.ts";
 import "./command-center.test.ts";
 import "./onboarding.test.ts";
+import "./projects-saved-view.test.ts";

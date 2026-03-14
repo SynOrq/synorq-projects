@@ -28,6 +28,7 @@ export function buildOnboardingChecklist(params: {
   taskCount: number;
   reportsReady: boolean;
   weeklyDigestEnabled: boolean;
+  hasSavedProjectView: boolean;
 }) {
   const items: OnboardingChecklistItem[] = [
     {
@@ -69,6 +70,14 @@ export function buildOnboardingChecklist(params: {
       done: params.taskCount > 0,
       href: "/projects",
       cta: "Projeleri ac",
+    },
+    {
+      id: "saved-view",
+      label: "Portfoy gorunumunu kaydet",
+      description: "Risk, table veya owner odakli view'u ekip icin tekrar kullanilabilir hale getir.",
+      done: params.hasSavedProjectView,
+      href: "/projects",
+      cta: "View'u kaydet",
     },
     {
       id: "reports",

@@ -19,9 +19,12 @@ import {
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { analyzeProjects, type PortfolioProject } from "@/lib/portfolio";
+import { createSavedProjectsView, normalizeSavedProjectsView, resolveProjectFilters } from "@/lib/projects-saved-view";
 import { formatDate, formatRelative } from "@/lib/utils";
+import { findWorkspaceState } from "@/lib/workspace-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import ProjectsSavedViewControls from "@/components/projects/ProjectsSavedViewControls";
 
 const statusLabel: Record<string, { label: string; variant: "success" | "warning" | "secondary" | "danger" }> = {
   ACTIVE: { label: "Aktif", variant: "success" },
@@ -62,6 +65,15 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
   });
 
   if (!workspace) redirect("/auth/login");
+
+  const workspaceState = await findWorkspaceState({
+    workspaceId: workspace.id,
+    userId: session.user.id,
+    includeProjectView: true,
+  });
+
+  const savedViewResult = normalizeSavedProjectsView(workspaceState?.savedProjectsView ?? null);
+  const savedView = savedViewResult.data ?? null;
 
   const projectsRaw = await db.project.findMany({
     where: { workspaceId: workspace.id },
@@ -108,10 +120,17 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
     orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
   });
 
-  const query = filters?.q?.trim().toLowerCase() ?? "";
-  const selectedStatus = filters?.status?.toUpperCase() ?? "ALL";
-  const selectedHealth = filters?.health?.toLowerCase() ?? "all";
-  const selectedView = filters?.view === "table" ? "table" : "cards";
+  const resolvedFilters = resolveProjectFilters(filters ?? {}, savedView);
+  const query = resolvedFilters.q.toLowerCase();
+  const selectedStatus = resolvedFilters.status;
+  const selectedHealth = resolvedFilters.health;
+  const selectedView = resolvedFilters.view;
+  const currentView = createSavedProjectsView({
+    q: resolvedFilters.q,
+    status: selectedStatus,
+    health: selectedHealth,
+    view: selectedView,
+  });
   const analyzedProjects = analyzeProjects(projectsRaw as PortfolioProject[]);
 
   const filteredProjects = analyzedProjects.filter((project) => {
@@ -146,24 +165,42 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
   ];
 
   const savedViews = [
+    ...(savedView
+      ? [
+          {
+            label: `${savedView.label} (Saved)`,
+            href: buildQuery({
+              q: savedView.q ?? undefined,
+              status: savedView.status === "ALL" ? undefined : savedView.status,
+              health: savedView.health === "all" ? undefined : savedView.health,
+              view: savedView.view,
+            }),
+            active:
+              selectedStatus === savedView.status &&
+              selectedHealth === savedView.health &&
+              selectedView === savedView.view &&
+              query === (savedView.q ?? "").toLowerCase(),
+          },
+        ]
+      : []),
     {
       label: "Tum projeler",
-      href: buildQuery({ q: filters?.q, view: selectedView }),
+      href: buildQuery({ q: resolvedFilters.q || undefined, view: selectedView }),
       active: selectedStatus === "ALL" && selectedHealth === "all",
     },
     {
       label: "Riskte olanlar",
-      href: buildQuery({ q: filters?.q, health: "risk", view: selectedView }),
+      href: buildQuery({ q: resolvedFilters.q || undefined, health: "risk", view: selectedView }),
       active: selectedHealth === "risk",
     },
     {
       label: "Bu hafta teslim",
-      href: buildQuery({ q: filters?.q, status: "ACTIVE", view: selectedView }),
+      href: buildQuery({ q: resolvedFilters.q || undefined, status: "ACTIVE", view: selectedView }),
       active: selectedStatus === "ACTIVE" && selectedHealth === "all",
     },
     {
       label: "Beklemede",
-      href: buildQuery({ q: filters?.q, status: "ON_HOLD", view: selectedView }),
+      href: buildQuery({ q: resolvedFilters.q || undefined, status: "ON_HOLD", view: selectedView }),
       active: selectedStatus === "ON_HOLD",
     },
   ];
@@ -285,7 +322,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                 <input
                   type="text"
                   name="q"
-                  defaultValue={filters?.q ?? ""}
+                  defaultValue={resolvedFilters.q}
                   placeholder="Proje adi veya aciklama ara"
                   className="w-full border-none bg-transparent text-sm text-slate-700 outline-none"
                 />
@@ -340,7 +377,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
           <div className="flex items-center rounded-2xl bg-slate-100 p-1">
             <Link
               href={`/projects${buildQuery({
-                q: filters?.q,
+                q: resolvedFilters.q || undefined,
                 status: selectedStatus === "ALL" ? undefined : selectedStatus,
                 health: selectedHealth === "all" ? undefined : selectedHealth,
                 view: "cards",
@@ -354,7 +391,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
             </Link>
             <Link
               href={`/projects${buildQuery({
-                q: filters?.q,
+                q: resolvedFilters.q || undefined,
                 status: selectedStatus === "ALL" ? undefined : selectedStatus,
                 health: selectedHealth === "all" ? undefined : selectedHealth,
                 view: "table",
@@ -382,6 +419,8 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
             </Link>
           ))}
         </div>
+
+        <ProjectsSavedViewControls currentView={currentView} savedView={savedView} />
       </div>
 
       {analyzedProjects.length === 0 && (
