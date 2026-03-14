@@ -77,12 +77,12 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] personal workload summary
   - [x] filters and saved segments
 - [ ] Audit / Activity ekraninin enterprise timeline'a donusmesi
-  - [ ] actor filter
+  - [x] actor filter
   - [x] entity filter
   - [x] severity filter
-  - [ ] date range filter
-  - [ ] diff preview
-  - [ ] export CSV / JSON
+  - [x] date range filter
+  - [x] diff preview
+  - [x] export CSV / JSON
 - [ ] Settings ekraninin tabbed console'a donusmesi
   - [x] Workspace
   - [x] Profile

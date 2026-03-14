@@ -7,6 +7,7 @@ import {
   getActivitySeverity,
   getActivityTitle,
 } from "@/lib/activity";
+import type { ActivityMetadata } from "@/lib/activity";
 import { formatDateTime, formatRelative } from "@/lib/utils";
 import AuditConsole from "@/components/audit/AuditConsole";
 
@@ -51,6 +52,11 @@ export default async function AuditPage() {
       severity,
       projectName: item.project?.name ?? null,
       actorName,
+      createdAt: item.createdAt.toISOString(),
+      changes:
+        item.metadata && typeof item.metadata === "object" && !Array.isArray(item.metadata)
+          ? ((item.metadata as ActivityMetadata)?.changes ?? [])
+          : [],
     };
   });
 
