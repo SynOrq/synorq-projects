@@ -81,6 +81,29 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
           priority: true,
         },
       },
+      milestones: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          dueDate: true,
+          tasks: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+        },
+      },
+      risks: {
+        select: {
+          id: true,
+          status: true,
+          impact: true,
+          likelihood: true,
+          dueDate: true,
+        },
+      },
     },
     orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
   });
@@ -419,7 +442,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3 rounded-3xl bg-slate-50 p-4 sm:grid-cols-4">
+                <div className="mt-5 grid gap-3 rounded-3xl bg-slate-50 p-4 sm:grid-cols-5">
                   <div>
                     <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Health</div>
                     <div className="mt-1 text-lg font-black text-slate-950">{project.health.score}</div>
@@ -432,13 +455,18 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                   </div>
                   <div>
                     <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Risk</div>
-                    <div className="mt-1 text-lg font-black text-slate-950">{project.overdueTasks}</div>
-                    <div className="text-xs text-slate-500">geciken is</div>
+                    <div className="mt-1 text-lg font-black text-slate-950">{project.openRisks}</div>
+                    <div className="text-xs text-slate-500">{project.criticalRisks} kritik</div>
                   </div>
                   <div>
                     <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Sahiplik</div>
                     <div className="mt-1 text-lg font-black text-slate-950">{project.activeAssignees}</div>
                     <div className="text-xs text-slate-500">{project.unassignedTasks} atanmamis</div>
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Milestone</div>
+                    <div className="mt-1 text-lg font-black text-slate-950">%{project.milestoneCompletionRate}</div>
+                    <div className="text-xs text-slate-500">{project.openMilestones} acik milestone</div>
                   </div>
                 </div>
 
@@ -473,6 +501,15 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                     </div>
                   </div>
                 </div>
+
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1">
+                    {project.nextMilestone?.title ?? "Milestone tanimsiz"}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1">
+                    {project.nextMilestone?.dueDate ? formatDate(project.nextMilestone.dueDate) : "Plansiz"}
+                  </span>
+                </div>
               </Link>
             );
           })}
@@ -492,6 +529,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                   <th className="px-5 py-4">Due date</th>
                   <th className="px-5 py-4">Aktif is</th>
                   <th className="px-5 py-4">Risk</th>
+                  <th className="px-5 py-4">Milestone</th>
                   <th className="px-5 py-4">Owner</th>
                   <th className="px-5 py-4">Son hareket</th>
                 </tr>
@@ -533,7 +571,10 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                         {project.openTasks} acik / %{project.completionRate}
                       </td>
                       <td className="px-5 py-4 text-sm text-slate-700">
-                        {project.overdueTasks} geciken • {project.unassignedTasks} atanmamis
+                        {project.openRisks} acik • {project.criticalRisks} kritik
+                      </td>
+                      <td className="px-5 py-4 text-sm text-slate-700">
+                        %{project.milestoneCompletionRate} • {project.nextMilestone?.title ?? "Tanimsiz"}
                       </td>
                       <td className="px-5 py-4 text-sm text-slate-700">
                         {project.owner?.name ?? project.owner?.email ?? workspace.owner.name ?? workspace.owner.email}

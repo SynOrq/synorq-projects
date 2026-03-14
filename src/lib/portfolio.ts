@@ -1,6 +1,9 @@
 type ProjectStatus = "ACTIVE" | "ON_HOLD" | "COMPLETED" | "ARCHIVED";
 type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "CANCELLED";
 type ProjectType = "WEBSITE" | "MOBILE_APP" | "RETAINER" | "INTERNAL" | "MAINTENANCE";
+type MilestoneStatus = "PLANNED" | "IN_PROGRESS" | "AT_RISK" | "COMPLETED";
+type RiskStatus = "OPEN" | "MITIGATING" | "WATCH" | "CLOSED";
+type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 export type PortfolioTask = {
   id: string;
@@ -38,6 +41,20 @@ export type PortfolioProject = {
     health: "STABLE" | "WATCH" | "AT_RISK";
   } | null;
   tasks: PortfolioTask[];
+  milestones?: Array<{
+    id: string;
+    title: string;
+    status: MilestoneStatus;
+    dueDate: Date | null;
+    tasks?: Array<Pick<PortfolioTask, "id" | "status">>;
+  }>;
+  risks?: Array<{
+    id: string;
+    status: RiskStatus;
+    impact: RiskLevel;
+    likelihood: RiskLevel;
+    dueDate: Date | null;
+  }>;
 };
 
 export type PortfolioMember = {
@@ -67,6 +84,17 @@ export type AnalyzedProject = PortfolioProject & {
   dueDateResolved: Date | null;
   dueInDays: number | null;
   lastActivityAt: Date;
+  openMilestones: number;
+  completedMilestones: number;
+  milestoneCompletionRate: number;
+  nextMilestone: {
+    id: string;
+    title: string;
+    status: MilestoneStatus;
+    dueDate: Date | null;
+  } | null;
+  openRisks: number;
+  criticalRisks: number;
 };
 
 export type TeamLoadSignal = PortfolioMember & {
@@ -76,6 +104,13 @@ export type TeamLoadSignal = PortfolioMember & {
   completedLast7Days: number;
   loadScore: number;
   loadState: "balanced" | "watch" | "overloaded";
+};
+
+const riskLevelWeight: Record<RiskLevel, number> = {
+  LOW: 1,
+  MEDIUM: 2,
+  HIGH: 3,
+  CRITICAL: 4,
 };
 
 function startOfDay(date: Date) {
@@ -167,6 +202,26 @@ export function analyzeProjects(projects: PortfolioProject[], now = new Date()) 
     const unassignedTasks = openTasks.filter((task) => !task.assigneeId).length;
     const activeAssignees = new Set(openTasks.map((task) => task.assigneeId).filter(Boolean)).size;
     const completionRate = getCompletionRate(totalTasks, completedTasks);
+    const milestones = project.milestones ?? [];
+    const openMilestones = milestones.filter((milestone) => milestone.status !== "COMPLETED").length;
+    const completedMilestones = milestones.filter((milestone) => milestone.status === "COMPLETED").length;
+    const milestoneCompletionRate = getCompletionRate(milestones.length, completedMilestones);
+    const nextMilestone = [...milestones]
+      .sort((left, right) => {
+        const leftTime = left.dueDate ? new Date(left.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+        const rightTime = right.dueDate ? new Date(right.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+        return leftTime - rightTime;
+      })
+      .find((milestone) => milestone.status !== "COMPLETED") ?? null;
+    const risks = project.risks ?? [];
+    const openRisks = risks.filter((risk) => risk.status !== "CLOSED").length;
+    const criticalRisks = risks.filter(
+      (risk) =>
+        risk.status !== "CLOSED" &&
+        (risk.impact === "CRITICAL" ||
+          risk.likelihood === "CRITICAL" ||
+          riskLevelWeight[risk.impact] + riskLevelWeight[risk.likelihood] >= 6)
+    ).length;
     const dueDateResolved = resolveProjectDueDate(project);
     const dueInDays =
       dueDateResolved === null
@@ -188,15 +243,21 @@ export function analyzeProjects(projects: PortfolioProject[], now = new Date()) 
       completionRate,
       activeAssignees,
       health: getProjectHealth({
-        overdueTasks,
+        overdueTasks: overdueTasks + criticalRisks,
         dueInDays,
         completionRate,
-        unassignedTasks,
+        unassignedTasks: unassignedTasks + openRisks,
         status: project.status,
       }),
       dueDateResolved,
       dueInDays,
       lastActivityAt,
+      openMilestones,
+      completedMilestones,
+      milestoneCompletionRate,
+      nextMilestone,
+      openRisks,
+      criticalRisks,
     } satisfies AnalyzedProject;
   });
 }

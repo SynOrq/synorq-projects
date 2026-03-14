@@ -37,6 +37,7 @@ function readMetadata(value: unknown): ActivityMetadata {
 export function getActivityCategory(action: string): ActivityCategory {
   if (action.startsWith("workspace.member")) return "team";
   if (action.startsWith("workspace.")) return "workspace";
+  if (action.startsWith("milestone.") || action.startsWith("risk.")) return "project";
   if (action.startsWith("project.")) return "project";
   if (action.startsWith("task.attachment")) return "file";
   return "task";
@@ -56,6 +57,9 @@ export function getActivitySeverity(action: string, metadataValue: unknown): Act
   }
 
   if (action === "task.assignee_changed" || action === "workspace.member.role_updated") return "warning";
+  if (action === "risk.created" || action === "risk.updated" || action === "milestone.created" || action === "milestone.updated") {
+    return "warning";
+  }
   if (action === "workspace.preference_changed") return "info";
   if (action === "task.moved" || action === "task.updated" || action === "project.created") return "info";
   if (action === "task.deleted") return "critical";
@@ -75,6 +79,10 @@ export function getActivityTitle(action: string) {
     "task.due_date_changed": "Teslim tarihi guncellendi",
     "task.deleted": "Gorev silindi",
     "task.moved": "Gorev kolon degistirdi",
+    "milestone.created": "Yeni milestone eklendi",
+    "milestone.updated": "Milestone guncellendi",
+    "risk.created": "Risk kaydi olusturuldu",
+    "risk.updated": "Risk kaydi guncellendi",
     "task.commented": "Yeni yorum eklendi",
     "task.subtask.created": "Alt gorev eklendi",
     "task.subtask.updated": "Alt gorev guncellendi",
@@ -122,6 +130,14 @@ export function getActivityDetail(params: {
         : `${params.actorName} gorev alanlarini guncelledi.`;
     case "task.created":
       return `${params.actorName} yeni bir gorev karti acti.`;
+    case "milestone.created":
+      return `${params.actorName} ${metadata?.title ?? "yeni bir milestone"} kaydi ekledi.`;
+    case "milestone.updated":
+      return `${params.actorName} ${metadata?.title ?? "milestone"} kaydini guncelledi.`;
+    case "risk.created":
+      return `${params.actorName} ${metadata?.title ?? "risk"} icin yeni bir kayit olusturdu.`;
+    case "risk.updated":
+      return `${params.actorName} ${metadata?.title ?? "risk"} kaydini guncelledi.`;
     case "task.deleted":
       return `${params.actorName} gorev kaydini kaldirdi.`;
     case "task.commented":
@@ -148,5 +164,5 @@ export function shouldSurfaceAsActionRequired(action: string, metadataValue: unk
   const severity = getActivitySeverity(action, metadataValue);
   if (severity === "critical") return true;
   if (isMentionForUser(metadataValue, userId)) return true;
-  return action === "task.due_date_changed" || action === "task.assignee_changed";
+  return action === "task.due_date_changed" || action === "task.assignee_changed" || action === "risk.created";
 }

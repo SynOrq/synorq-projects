@@ -13,12 +13,21 @@ type ProjectPageProps = {
   searchParams?: Promise<{ tab?: string }>;
 };
 
-const validTabs = new Set(["overview", "board", "list", "activity", "risks"]);
+const validTabs = new Set(["overview", "board", "list", "timeline", "activity", "risks"]);
+
+const riskLevelWeight = {
+  LOW: 1,
+  MEDIUM: 2,
+  HIGH: 3,
+  CRITICAL: 4,
+} as const;
 
 export default async function ProjectPage({ params, searchParams }: ProjectPageProps) {
   const { projectId } = await params;
   const query = await searchParams;
-  const currentTab = validTabs.has(query?.tab ?? "") ? (query?.tab as "overview" | "board" | "list" | "activity" | "risks") : "overview";
+  const currentTab = validTabs.has(query?.tab ?? "")
+    ? (query?.tab as "overview" | "board" | "list" | "timeline" | "activity" | "risks")
+    : "overview";
 
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/login");
@@ -40,6 +49,25 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
             include: taskCardInclude,
           },
         },
+      },
+      milestones: {
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+          tasks: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+        },
+        orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
+      },
+      risks: {
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+          task: { select: { id: true, title: true } },
+        },
+        orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
       },
       activityLogs: {
         include: {
@@ -88,6 +116,23 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
         updatedAt: task.updatedAt,
         priority: task.priority,
       })),
+      milestones: project.milestones.map((milestone) => ({
+        id: milestone.id,
+        title: milestone.title,
+        status: milestone.status,
+        dueDate: milestone.dueDate,
+        tasks: milestone.tasks.map((task) => ({
+          id: task.id,
+          status: task.status,
+        })),
+      })),
+      risks: project.risks.map((risk) => ({
+        id: risk.id,
+        status: risk.status,
+        impact: risk.impact,
+        likelihood: risk.likelihood,
+        dueDate: risk.dueDate,
+      })),
     } satisfies PortfolioProject,
   ])[0];
 
@@ -128,58 +173,54 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
     return diff >= 0 && diff <= 3 * 86400000;
   });
 
+  const milestones = project.milestones.map((milestone) => {
+    const milestoneTaskCount = milestone.tasks.length;
+    const completedTaskCount = milestone.tasks.filter((task) => task.status === "DONE").length;
+    const progress = milestoneTaskCount === 0 ? (milestone.status === "COMPLETED" ? 100 : 0) : Math.round((completedTaskCount / milestoneTaskCount) * 100);
+
+    return {
+      id: milestone.id,
+      title: milestone.title,
+      description: milestone.description,
+      status: milestone.status,
+      dueDate: milestone.dueDate,
+      ownerName: milestone.owner?.name ?? milestone.owner?.email ?? "Owner tanimsiz",
+      taskCount: milestoneTaskCount,
+      completedTaskCount,
+      progress,
+    };
+  });
+
   const risks = [
-    ...(project.client?.health === "AT_RISK"
+    ...project.risks.map((risk) => {
+      const riskWeight = riskLevelWeight[risk.impact] + riskLevelWeight[risk.likelihood];
+      return {
+        id: risk.id,
+        title: risk.title,
+        detail: risk.description ?? "Bu risk kaydi icin ek aciklama girilmedi.",
+        severity: riskWeight >= 6 || risk.impact === "CRITICAL" || risk.likelihood === "CRITICAL" ? ("critical" as const) : ("warning" as const),
+        recommendation: risk.mitigationPlan ?? "Mitigation plani eklenmedi.",
+        status: risk.status,
+        ownerName: risk.owner?.name ?? risk.owner?.email ?? "Owner tanimsiz",
+        dueDate: risk.dueDate,
+        taskTitle: risk.task?.title ?? null,
+        impact: risk.impact,
+        likelihood: risk.likelihood,
+      };
+    }),
+    ...(project.risks.length === 0 && project.client?.health === "AT_RISK"
       ? [{
           id: "client-health",
           title: "Client health at risk",
           detail: `${project.client.name} iliski seviyesi riskte gorunuyor ve bu proje icin daha sik durum guncellemesi gerekebilir.`,
           severity: "critical" as const,
           recommendation: "Haftalik status ozetini siklastirin ve onay bekleyen deliverable listesini netlestirin.",
-        }]
-      : project.client?.health === "WATCH"
-        ? [{
-            id: "client-watch",
-            title: "Client relationship needs monitoring",
-            detail: `${project.client.name} proje akisinda watch seviyesinde. Revizyon ve onay donguleri yakindan izlenmeli.`,
-            severity: "warning" as const,
-            recommendation: "Bir sonraki teslim oncesi paydaslarla risk review notu paylasin.",
-          }]
-        : []),
-    ...(overdueTasks.length > 0
-      ? [{
-          id: "overdue-tasks",
-          title: "Overdue tasks are impacting delivery",
-          detail: `${overdueTasks.length} acik gorev teslim tarihini gecmis durumda.`,
-          severity: "critical" as const,
-          recommendation: "Overdue isleri owner bazli dagitip bugun kapanacak net aksiyon listesi olusturun.",
-        }]
-      : []),
-    ...(unassignedTasks.length > 0
-      ? [{
-          id: "ownership-gap",
-          title: "Ownership gap detected",
-          detail: `${unassignedTasks.length} gorev henuz bir kisiye baglanmamis.`,
-          severity: "warning" as const,
-          recommendation: "Backlog grooming yapip atanmamis isleri owner ve tarihle netlestirin.",
-        }]
-      : []),
-    ...(blockedTasks.length > 0
-      ? [{
-          id: "blocked-work",
-          title: "Blocked work is accumulating",
-          detail: `${blockedTasks.length} gorev blocked etiketiyle bekliyor.`,
-          severity: "warning" as const,
-          recommendation: "Blocker sebeplerini acip ilgili karar sahiplerini ayni akisa cekin.",
-        }]
-      : []),
-    ...(nearDeadlineTasks.length > 0
-      ? [{
-          id: "deadline-cluster",
-          title: "Upcoming deadline cluster",
-          detail: `${nearDeadlineTasks.length} gorev sonraki 72 saat icinde teslim bekliyor.`,
-          severity: "warning" as const,
-          recommendation: "Bu gorevleri tek timeline gorusunde gruplayip review kapasitesini onceden ayirin.",
+          status: "OPEN",
+          ownerName: project.owner?.name ?? project.owner?.email ?? "Owner tanimsiz",
+          dueDate: project.dueDate,
+          taskTitle: null,
+          impact: "CRITICAL",
+          likelihood: "HIGH",
         }]
       : []),
   ];
@@ -200,6 +241,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
           project={{
             id: project.id,
             name: project.name,
+            startDate: project.startDate,
             dueDate: analyzedProject.dueDateResolved,
           }}
           sections={project.sections}
@@ -218,6 +260,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
             unassignedTasks: analyzedProject.unassignedTasks,
             completionRate: analyzedProject.completionRate,
           }}
+          milestones={milestones}
           teamLoad={teamLoad}
           activity={activity}
           risks={risks}

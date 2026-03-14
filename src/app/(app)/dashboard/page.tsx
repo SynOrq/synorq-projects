@@ -30,6 +30,8 @@ const ACTIVITY_LABELS = {
   "task.created": "Yeni gorev olusturuldu",
   "task.updated": "Gorev guncellendi",
   "task.moved": "Gorev kolon degistirdi",
+  "milestone.created": "Milestone eklendi",
+  "risk.created": "Risk kaydi acildi",
   "task.commented": "Yorum eklendi",
   "task.subtask.created": "Alt gorev acildi",
   "task.subtask.updated": "Alt gorev guncellendi",
@@ -90,6 +92,29 @@ export default async function DashboardPage() {
             createdAt: true,
             updatedAt: true,
             priority: true,
+          },
+        },
+        milestones: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            dueDate: true,
+            tasks: {
+              select: {
+                id: true,
+                status: true,
+              },
+            },
+          },
+        },
+        risks: {
+          select: {
+            id: true,
+            status: true,
+            impact: true,
+            likelihood: true,
+            dueDate: true,
           },
         },
       },
@@ -332,7 +357,7 @@ export default async function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-4">
+                <div className="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
                   <div className="rounded-2xl bg-white px-4 py-3">
                     <div className="text-xs text-slate-400">Client</div>
                     <div className="mt-1 text-sm font-semibold text-slate-900">{project.client?.name ?? "Internal"}</div>
@@ -351,11 +376,17 @@ export default async function DashboardPage() {
                   </div>
                   <div className="rounded-2xl bg-white px-4 py-3">
                     <div className="text-xs text-slate-400">Acil risk</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-900">{project.overdueTasks} geciken is</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-900">{project.criticalRisks} kritik risk</div>
                   </div>
                   <div className="rounded-2xl bg-white px-4 py-3">
                     <div className="text-xs text-slate-400">Sahiplik</div>
                     <div className="mt-1 text-sm font-semibold text-slate-900">{project.unassignedTasks} atanmamis gorev</div>
+                  </div>
+                  <div className="rounded-2xl bg-white px-4 py-3">
+                    <div className="text-xs text-slate-400">Milestone</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-900">
+                      {project.nextMilestone?.title ?? "Tanimsiz"}
+                    </div>
                   </div>
                 </div>
 

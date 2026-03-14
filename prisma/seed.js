@@ -241,6 +241,48 @@ async function seed() {
       clientId: clientIndex.northstar,
       startDate: daysFromNow(-12),
       dueDate: daysFromNow(4),
+      milestones: [
+        {
+          key: "launch-readiness",
+          title: "Launch readiness review",
+          description: "Final launch checklist, redirects and QA closeout.",
+          ownerId: memberIndex.opsLead,
+          status: "AT_RISK",
+          dueDate: daysFromNow(1),
+        },
+        {
+          key: "client-signoff",
+          title: "Client sign-off package",
+          description: "Stakeholder walkthrough and final approvals.",
+          ownerId: memberIndex.deliveryManager,
+          status: "IN_PROGRESS",
+          dueDate: daysFromNow(3),
+        },
+      ],
+      risks: [
+        {
+          title: "Redirect approval may slip launch window",
+          description: "Client approval on redirect matrix is still pending and can delay go-live.",
+          status: "OPEN",
+          impact: "CRITICAL",
+          likelihood: "HIGH",
+          ownerId: memberIndex.opsLead,
+          dueDate: daysFromNow(1),
+          mitigationPlan: "Run escalation check-in and lock final owner list before noon.",
+          taskTitle: "Finalize launch checklist and cutover owners",
+        },
+        {
+          title: "Mobile navigation defect blocks QA sign-off",
+          description: "Campaign page navigation issue remains open on Safari iOS.",
+          status: "MITIGATING",
+          impact: "HIGH",
+          likelihood: "HIGH",
+          ownerId: memberIndex.engineer,
+          dueDate: daysFromNow(0),
+          mitigationPlan: "Pair debug with QA and isolate browser-specific state handling today.",
+          taskTitle: "Resolve mobile nav overflow on campaign pages",
+        },
+      ],
       tasks: [
         {
           title: "Finalize launch checklist and cutover owners",
@@ -249,6 +291,7 @@ async function seed() {
           priority: "URGENT",
           dueDate: daysFromNow(1),
           assigneeId: memberIndex.opsLead,
+          milestoneKey: "launch-readiness",
           labels: ["Milestone", "Launch"],
           comments: [
             { authorId: workspace.ownerId, content: "Client approval is pending on final redirects." },
@@ -262,6 +305,7 @@ async function seed() {
           priority: "HIGH",
           dueDate: daysFromNow(-1),
           assigneeId: memberIndex.engineer,
+          milestoneKey: "launch-readiness",
           labels: ["Bug", "Blocked"],
           subtasks: [
             {
@@ -279,6 +323,7 @@ async function seed() {
           priority: "MEDIUM",
           dueDate: daysFromNow(2),
           assigneeId: null,
+          milestoneKey: "client-signoff",
           labels: ["Client"],
         },
         {
@@ -289,6 +334,7 @@ async function seed() {
           dueDate: daysFromNow(-2),
           completedAt: daysFromNow(-2, 16),
           assigneeId: memberIndex.deliveryManager,
+          milestoneKey: "client-signoff",
           labels: ["Content"],
           comments: [
             { authorId: memberIndex.deliveryManager, content: "Migration summary shared with client and archive team." },
@@ -308,6 +354,37 @@ async function seed() {
       clientId: clientIndex.atlas,
       startDate: daysFromNow(-18),
       dueDate: daysFromNow(7),
+      milestones: [
+        {
+          key: "pilot-greenlight",
+          title: "Pilot release greenlight",
+          description: "Regression closeout and release checklist approval.",
+          ownerId: memberIndex.deliveryManager,
+          status: "IN_PROGRESS",
+          dueDate: daysFromNow(2),
+        },
+        {
+          key: "field-enablement",
+          title: "Field enablement readiness",
+          description: "Training owner and adoption kit prepared for launch.",
+          ownerId: memberIndex.opsLead,
+          status: "PLANNED",
+          dueDate: daysFromNow(4),
+        },
+      ],
+      risks: [
+        {
+          title: "Regression triage may block pilot release",
+          description: "Open mobile regressions still require final verification before greenlight.",
+          status: "OPEN",
+          impact: "HIGH",
+          likelihood: "HIGH",
+          ownerId: memberIndex.deliveryManager,
+          dueDate: daysFromNow(1),
+          mitigationPlan: "Create noon checkpoint and freeze non-critical scope until triage closes.",
+          taskTitle: "Close beta regression triage",
+        },
+      ],
       tasks: [
         {
           title: "Close beta regression triage",
@@ -316,6 +393,7 @@ async function seed() {
           priority: "URGENT",
           dueDate: daysFromNow(0),
           assigneeId: memberIndex.engineer,
+          milestoneKey: "pilot-greenlight",
           labels: ["Mobile", "Risk"],
           comments: [{ authorId: memberIndex.opsLead, content: "Need a noon status update before pilot greenlight." }],
         },
@@ -326,6 +404,7 @@ async function seed() {
           priority: "HIGH",
           dueDate: daysFromNow(3),
           assigneeId: memberIndex.designer,
+          milestoneKey: "pilot-greenlight",
           labels: ["Design", "Client"],
         },
         {
@@ -335,6 +414,7 @@ async function seed() {
           priority: "MEDIUM",
           dueDate: daysFromNow(4),
           assigneeId: null,
+          milestoneKey: "field-enablement",
           labels: ["Ops"],
         },
         {
@@ -345,6 +425,7 @@ async function seed() {
           dueDate: daysFromNow(-3),
           completedAt: daysFromNow(-3, 15),
           assigneeId: memberIndex.deliveryManager,
+          milestoneKey: "pilot-greenlight",
           labels: ["Release"],
         },
       ],
@@ -361,6 +442,40 @@ async function seed() {
       clientId: clientIndex.helio,
       startDate: daysFromNow(-9),
       dueDate: daysFromNow(2),
+      milestones: [
+        {
+          key: "weekly-report",
+          title: "Weekly reporting handoff",
+          description: "Analytics summary and client review package must be ready.",
+          ownerId: memberIndex.opsLead,
+          status: "AT_RISK",
+          dueDate: daysFromNow(1),
+        },
+      ],
+      risks: [
+        {
+          title: "Review cycle volume is increasing",
+          description: "Helio is generating more revision loops than planned for this sprint.",
+          status: "WATCH",
+          impact: "HIGH",
+          likelihood: "MEDIUM",
+          ownerId: memberIndex.opsLead,
+          dueDate: daysFromNow(2),
+          mitigationPlan: "Scope review requests into a single approval batch and cap ad-hoc asks.",
+          taskTitle: "Ship weekly analytics summary",
+        },
+        {
+          title: "SEO backlog is already overdue",
+          description: "Delayed recommendations may affect perceived delivery quality this week.",
+          status: "OPEN",
+          impact: "HIGH",
+          likelihood: "HIGH",
+          ownerId: memberIndex.deliveryManager,
+          dueDate: daysFromNow(0),
+          mitigationPlan: "Reassign two items and lock today’s catch-up slot with SEO owner.",
+          taskTitle: "Backfill overdue SEO recommendations",
+        },
+      ],
       tasks: [
         {
           title: "Ship weekly analytics summary",
@@ -369,6 +484,7 @@ async function seed() {
           priority: "HIGH",
           dueDate: daysFromNow(1),
           assigneeId: memberIndex.opsLead,
+          milestoneKey: "weekly-report",
           labels: ["Reporting"],
         },
         {
@@ -378,6 +494,7 @@ async function seed() {
           priority: "HIGH",
           dueDate: daysFromNow(2),
           assigneeId: memberIndex.designer,
+          milestoneKey: "weekly-report",
           labels: ["Creative"],
         },
         {
@@ -387,6 +504,7 @@ async function seed() {
           priority: "MEDIUM",
           dueDate: daysFromNow(-2),
           assigneeId: memberIndex.deliveryManager,
+          milestoneKey: "weekly-report",
           labels: ["SEO", "Risk"],
         },
       ],
@@ -403,6 +521,29 @@ async function seed() {
       clientId: null,
       startDate: daysFromNow(-22),
       dueDate: daysFromNow(11),
+      milestones: [
+        {
+          key: "playbook-refresh",
+          title: "Playbook refresh pack",
+          description: "Operational templates and QA rhythm updates published.",
+          ownerId: workspace.ownerId,
+          status: "IN_PROGRESS",
+          dueDate: daysFromNow(6),
+        },
+      ],
+      risks: [
+        {
+          title: "Internal standards work is competing with client delivery",
+          description: "The initiative is paused and may lose momentum against client workload.",
+          status: "WATCH",
+          impact: "MEDIUM",
+          likelihood: "HIGH",
+          ownerId: workspace.ownerId,
+          dueDate: daysFromNow(5),
+          mitigationPlan: "Reserve a protected weekly slot and keep scope limited to one template batch.",
+          taskTitle: "Map recurring blockers from last 30 days",
+        },
+      ],
       tasks: [
         {
           title: "Define default weekly status report format",
@@ -411,6 +552,7 @@ async function seed() {
           priority: "MEDIUM",
           dueDate: daysFromNow(6),
           assigneeId: memberIndex.opsLead,
+          milestoneKey: "playbook-refresh",
           labels: ["Internal"],
         },
         {
@@ -421,6 +563,7 @@ async function seed() {
           dueDate: daysFromNow(-5),
           completedAt: daysFromNow(-5, 17),
           assigneeId: workspace.ownerId,
+          milestoneKey: "playbook-refresh",
           labels: ["Template"],
         },
         {
@@ -430,6 +573,7 @@ async function seed() {
           priority: "MEDIUM",
           dueDate: daysFromNow(5),
           assigneeId: memberIndex.deliveryManager,
+          milestoneKey: "playbook-refresh",
           labels: ["Ops"],
         },
       ],
@@ -497,6 +641,41 @@ async function seed() {
     }
 
     const sectionMap = Object.fromEntries(project.sections.map((section) => [section.name, section]));
+    const milestoneMap = {};
+
+    for (const milestoneBlueprint of blueprint.milestones ?? []) {
+      const existingMilestone = await prisma.milestone.findFirst({
+        where: {
+          projectId: project.id,
+          title: milestoneBlueprint.title,
+        },
+      });
+
+      const milestone = existingMilestone
+        ? await prisma.milestone.update({
+            where: { id: existingMilestone.id },
+            data: {
+              ownerId: milestoneBlueprint.ownerId,
+              description: milestoneBlueprint.description,
+              status: milestoneBlueprint.status,
+              dueDate: milestoneBlueprint.dueDate,
+            },
+          })
+        : await prisma.milestone.create({
+            data: {
+              projectId: project.id,
+              ownerId: milestoneBlueprint.ownerId,
+              title: milestoneBlueprint.title,
+              description: milestoneBlueprint.description,
+              status: milestoneBlueprint.status,
+              dueDate: milestoneBlueprint.dueDate,
+            },
+          });
+
+      milestoneMap[milestoneBlueprint.key] = milestone;
+    }
+
+    const taskMap = {};
 
     for (let index = 0; index < blueprint.tasks.length; index += 1) {
       const taskBlueprint = blueprint.tasks[index];
@@ -513,6 +692,7 @@ async function seed() {
           data: {
             projectId: project.id,
             sectionId: sectionMap[taskBlueprint.section]?.id ?? null,
+            milestoneId: taskBlueprint.milestoneKey ? milestoneMap[taskBlueprint.milestoneKey]?.id ?? null : null,
             title: taskBlueprint.title,
             description: `${blueprint.name} deliverable inside the Synorq demo workspace.`,
             status: taskBlueprint.status,
@@ -528,7 +708,27 @@ async function seed() {
             createdAt: daysFromNow(-10 + index),
           },
         });
+      } else {
+        task = await prisma.task.update({
+          where: { id: task.id },
+          data: {
+            sectionId: sectionMap[taskBlueprint.section]?.id ?? null,
+            milestoneId: taskBlueprint.milestoneKey ? milestoneMap[taskBlueprint.milestoneKey]?.id ?? null : null,
+            description: `${blueprint.name} deliverable inside the Synorq demo workspace.`,
+            status: taskBlueprint.status,
+            priority: taskBlueprint.priority,
+            assigneeId: taskBlueprint.assigneeId,
+            order: index,
+            dueDate: taskBlueprint.dueDate ?? null,
+            completedAt: taskBlueprint.completedAt ?? null,
+            labels: taskBlueprint.labels,
+            estimatedH: 4 + index,
+            loggedH: taskBlueprint.status === "DONE" ? 3 + index : Math.max(1, index),
+          },
+        });
       }
+
+      taskMap[taskBlueprint.title] = task;
 
       if (taskBlueprint.subtasks) {
         for (const [subIndex, subTask] of taskBlueprint.subtasks.entries()) {
@@ -580,6 +780,47 @@ async function seed() {
         }
       }
     }
+
+    for (const riskBlueprint of blueprint.risks ?? []) {
+      const linkedTask = riskBlueprint.taskTitle ? taskMap[riskBlueprint.taskTitle] ?? null : null;
+      const existingRisk = await prisma.risk.findFirst({
+        where: {
+          projectId: project.id,
+          title: riskBlueprint.title,
+        },
+      });
+
+      if (existingRisk) {
+        await prisma.risk.update({
+          where: { id: existingRisk.id },
+          data: {
+            ownerId: riskBlueprint.ownerId,
+            taskId: linkedTask?.id ?? null,
+            description: riskBlueprint.description,
+            status: riskBlueprint.status,
+            impact: riskBlueprint.impact,
+            likelihood: riskBlueprint.likelihood,
+            mitigationPlan: riskBlueprint.mitigationPlan,
+            dueDate: riskBlueprint.dueDate,
+          },
+        });
+      } else {
+        await prisma.risk.create({
+          data: {
+            projectId: project.id,
+            ownerId: riskBlueprint.ownerId,
+            taskId: linkedTask?.id ?? null,
+            title: riskBlueprint.title,
+            description: riskBlueprint.description,
+            status: riskBlueprint.status,
+            impact: riskBlueprint.impact,
+            likelihood: riskBlueprint.likelihood,
+            mitigationPlan: riskBlueprint.mitigationPlan,
+            dueDate: riskBlueprint.dueDate,
+          },
+        });
+      }
+    }
   }
 
   const existingActivityCount = await prisma.activityLog.count({
@@ -617,6 +858,20 @@ async function seed() {
         name: { in: projectBlueprints.map((item) => item.name) },
       },
       include: {
+        milestones: {
+          select: {
+            id: true,
+            title: true,
+          },
+          orderBy: { createdAt: "asc" },
+        },
+        risks: {
+          select: {
+            id: true,
+            title: true,
+          },
+          orderBy: { createdAt: "asc" },
+        },
         tasks: {
           select: {
             id: true,
@@ -656,6 +911,32 @@ async function seed() {
             taskId: secondTask.id,
             fromSectionName: "Planlandi",
             toSectionName: secondTask.section?.name ?? "Yurutmede",
+          },
+        });
+      }
+
+      const firstMilestone = project.milestones[0];
+      if (firstMilestone) {
+        activityPayload.push({
+          action: "milestone.created",
+          userId: memberIndex.opsLead,
+          projectId: project.id,
+          createdAt: hoursAgo(9 - Math.min(activityPayload.length, 7)),
+          metadata: {
+            title: firstMilestone.title,
+          },
+        });
+      }
+
+      const firstRisk = project.risks[0];
+      if (firstRisk) {
+        activityPayload.push({
+          action: "risk.created",
+          userId: memberIndex.opsLead,
+          projectId: project.id,
+          createdAt: hoursAgo(8 - Math.min(activityPayload.length, 6)),
+          metadata: {
+            title: firstRisk.title,
           },
         });
       }

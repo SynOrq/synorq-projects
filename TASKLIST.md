@@ -17,8 +17,8 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Project tags
   - [ ] Visibility/access strategy
   - [ ] Health score persistence or derived strategy
-- [ ] Milestone veri modeli eklenecek
-- [ ] Risk register veri modeli eklenecek
+- [x] Milestone veri modeli eklenecek
+- [x] Risk register veri modeli eklenecek
 - [ ] Team capacity/workload veri modeli eklenecek
 - [ ] Audit event taxonomy genisletilecek
   - [ ] project.created
@@ -26,15 +26,15 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [ ] task.deleted
   - [ ] task.assignee_changed
   - [ ] task.due_date_changed
-  - [ ] risk.created / updated
-  - [ ] milestone.created / updated
+  - [x] risk.created / updated
+  - [x] milestone.created / updated
   - [ ] workspace.preference_changed
   - [ ] export.created
 - [ ] Ortak analytics helpers genisletilecek
   - [ ] portfolio health
   - [ ] team workload
-  - [ ] milestone progress
-  - [ ] risk severity
+  - [x] milestone progress
+  - [x] risk severity
   - [ ] weekly reporting metrics
 
 ## Phase 1: Core P0 Product Surfaces
@@ -60,7 +60,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [ ] saved views kalici hale getirilecek
   - [ ] portfolio risk trend
   - [ ] owner-based distribution
-  - [ ] milestone progress
+  - [x] milestone progress
   - [ ] workload summary
 - [x] New project flow wizard olarak yeniden yazildi
   - [x] Step 1: Basic information
@@ -96,7 +96,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Overview
   - [x] Board
   - [x] List
-  - [ ] Timeline
+  - [x] Timeline
   - [ ] Files
   - [x] Activity
   - [x] Risks
@@ -118,11 +118,11 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [ ] linked project and tasks
   - [ ] status workflow
 - [ ] Team capacity module
-  - [ ] active load by user
-  - [ ] due-date density
-  - [ ] weekly capacity
-  - [ ] workload heatmap
-  - [ ] overloaded / underloaded signals
+  - [x] active load by user
+  - [x] due-date density
+  - [x] weekly capacity
+  - [x] workload heatmap
+  - [x] overloaded / underloaded signals
 - [ ] Reports modulu
   - [ ] weekly status report
   - [ ] portfolio risk report

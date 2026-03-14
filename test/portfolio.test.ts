@@ -30,6 +30,27 @@ test("analyzeProjects derives health and workload signals", () => {
           name: "Northstar",
           health: "WATCH",
         },
+        milestones: [
+          {
+            id: "milestone_1",
+            title: "Launch readiness",
+            status: "AT_RISK",
+            dueDate: new Date("2026-03-15T00:00:00.000Z"),
+            tasks: [
+              { id: "task_1", status: "DONE" },
+              { id: "task_2", status: "IN_PROGRESS" },
+            ],
+          },
+        ],
+        risks: [
+          {
+            id: "risk_1",
+            status: "OPEN",
+            impact: "HIGH",
+            likelihood: "HIGH",
+            dueDate: new Date("2026-03-15T00:00:00.000Z"),
+          },
+        ],
         tasks: [
           {
             id: "task_1",
@@ -62,7 +83,11 @@ test("analyzeProjects derives health and workload signals", () => {
   assert.equal(projects[0]?.overdueTasks, 1);
   assert.equal(projects[0]?.unassignedTasks, 1);
   assert.equal(projects[0]?.completionRate, 50);
-  assert.equal(projects[0]?.health.key, "steady");
+  assert.equal(projects[0]?.health.key, "risk");
+  assert.equal(projects[0]?.openMilestones, 1);
+  assert.equal(projects[0]?.openRisks, 1);
+  assert.equal(projects[0]?.criticalRisks, 1);
+  assert.equal(projects[0]?.nextMilestone?.title, "Launch readiness");
 });
 
 test("analyzeTeamLoad orders members by load and computes imbalance", () => {

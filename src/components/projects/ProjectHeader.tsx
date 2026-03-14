@@ -7,6 +7,7 @@ const tabs = [
   { id: "overview", label: "Overview" },
   { id: "board", label: "Board" },
   { id: "list", label: "List" },
+  { id: "timeline", label: "Timeline" },
   { id: "activity", label: "Activity" },
   { id: "risks", label: "Risks" },
 ] as const;

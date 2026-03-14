@@ -10,6 +10,7 @@ import {
 test("activity category resolves workspace team and file actions", () => {
   assert.equal(getActivityCategory("workspace.member.invited"), "team");
   assert.equal(getActivityCategory("workspace.updated"), "workspace");
+  assert.equal(getActivityCategory("risk.created"), "project");
   assert.equal(getActivityCategory("task.attachment.created"), "file");
   assert.equal(getActivityCategory("task.updated"), "task");
 });
@@ -30,6 +31,7 @@ test("action required picks up mentions and critical events", () => {
     shouldSurfaceAsActionRequired("task.updated", { targetUserId: "user_1" }, "user_1"),
     true
   );
+  assert.equal(shouldSurfaceAsActionRequired("risk.created", null, "user_1"), true);
   assert.equal(shouldSurfaceAsActionRequired("task.deleted", null, "user_1"), true);
   assert.equal(shouldSurfaceAsActionRequired("project.created", null, "user_1"), false);
 });

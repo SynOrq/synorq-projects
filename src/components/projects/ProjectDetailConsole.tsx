@@ -38,6 +38,24 @@ type RiskItem = {
   detail: string;
   severity: "warning" | "critical";
   recommendation: string;
+  status: string;
+  ownerName: string;
+  dueDate: Date | null;
+  taskTitle: string | null;
+  impact: string;
+  likelihood: string;
+};
+
+type MilestoneItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  status: "PLANNED" | "IN_PROGRESS" | "AT_RISK" | "COMPLETED";
+  dueDate: Date | null;
+  ownerName: string;
+  taskCount: number;
+  completedTaskCount: number;
+  progress: number;
 };
 
 type TeamLoadItem = {
@@ -51,10 +69,11 @@ type TeamLoadItem = {
 };
 
 type Props = {
-  currentTab: "overview" | "board" | "list" | "activity" | "risks";
+  currentTab: "overview" | "board" | "list" | "timeline" | "activity" | "risks";
   project: {
     id: string;
     name: string;
+    startDate: Date | null;
     dueDate: Date | null;
   };
   sections: SectionWithTasks[];
@@ -73,6 +92,7 @@ type Props = {
     unassignedTasks: number;
     completionRate: number;
   };
+  milestones: MilestoneItem[];
   teamLoad: TeamLoadItem[];
   activity: ActivityItem[];
   risks: RiskItem[];
@@ -84,6 +104,13 @@ function severityBadge(severity: "info" | "warning" | "critical") {
   return "secondary" as const;
 }
 
+function milestoneBadge(status: MilestoneItem["status"]) {
+  if (status === "AT_RISK") return "danger" as const;
+  if (status === "IN_PROGRESS") return "warning" as const;
+  if (status === "COMPLETED") return "success" as const;
+  return "secondary" as const;
+}
+
 export default function ProjectDetailConsole({
   currentTab,
   project,
@@ -92,6 +119,7 @@ export default function ProjectDetailConsole({
   tasks,
   health,
   metrics,
+  milestones,
   teamLoad,
   activity,
   risks,
@@ -163,6 +191,112 @@ export default function ProjectDetailConsole({
     );
   }
 
+  if (currentTab === "timeline") {
+    return (
+      <div className="p-6">
+        <div className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
+          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+              <CalendarRange size={18} className="text-indigo-600" />
+              Milestone timeline
+            </div>
+            <div className="mt-5 space-y-4">
+              {milestones.length === 0 && (
+                <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                  Bu proje icin milestone tanimi bulunmuyor.
+                </div>
+              )}
+              {milestones.map((milestone) => (
+                <div key={milestone.id} className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-black text-slate-950">{milestone.title}</div>
+                        <Badge variant={milestoneBadge(milestone.status)}>{milestone.status}</Badge>
+                      </div>
+                      {milestone.description && (
+                        <div className="mt-2 text-sm leading-6 text-slate-600">{milestone.description}</div>
+                      )}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {milestone.dueDate ? formatDate(milestone.dueDate) : "Plansiz"}
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl bg-white px-3 py-3">
+                      <div className="text-xs text-slate-400">Owner</div>
+                      <div className="mt-1 text-sm font-semibold text-slate-900">{milestone.ownerName}</div>
+                    </div>
+                    <div className="rounded-2xl bg-white px-3 py-3">
+                      <div className="text-xs text-slate-400">Linked tasks</div>
+                      <div className="mt-1 text-sm font-semibold text-slate-900">
+                        {milestone.completedTaskCount} / {milestone.taskCount}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-white px-3 py-3">
+                      <div className="text-xs text-slate-400">Progress</div>
+                      <div className="mt-1 text-sm font-semibold text-slate-900">%{milestone.progress}</div>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="mb-2 flex items-center justify-between text-xs font-medium text-slate-500">
+                      <span>Milestone progress</span>
+                      <span>%{milestone.progress}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white">
+                      <div className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-cyan-500" style={{ width: `${milestone.progress}%` }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-lg font-black text-slate-950">Timeline context</div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-slate-50 px-4 py-4">
+                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Project start</div>
+                <div className="mt-2 text-lg font-black text-slate-950">{project.startDate ? formatDate(project.startDate) : "Plansiz"}</div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 px-4 py-4">
+                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Target due</div>
+                <div className="mt-2 text-lg font-black text-slate-950">{project.dueDate ? formatDate(project.dueDate) : "Plansiz"}</div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 px-4 py-4">
+                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Open milestones</div>
+                <div className="mt-2 text-lg font-black text-slate-950">{milestones.filter((item) => item.status !== "COMPLETED").length}</div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 px-4 py-4">
+                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Critical risks</div>
+                <div className="mt-2 text-lg font-black text-slate-950">{risks.filter((item) => item.severity === "critical").length}</div>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <div className="text-sm font-black text-slate-950">Upcoming delivery items</div>
+              <div className="mt-3 space-y-3">
+                {tasks
+                  .filter((task) => task.status !== "DONE" && task.status !== "CANCELLED")
+                  .slice(0, 5)
+                  .map((task) => (
+                    <div key={task.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                      <div className="text-sm font-semibold text-slate-950">{task.title}</div>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                        <span className="rounded-full bg-white px-2.5 py-1">{task.assignee?.name ?? "Atanmamis"}</span>
+                        <span className="rounded-full bg-white px-2.5 py-1">{task.dueDate ? formatDate(task.dueDate) : "Plansiz"}</span>
+                        <span className="rounded-full bg-white px-2.5 py-1">{STATUS_CONFIG[task.status].label}</span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   if (currentTab === "activity") {
     return (
       <div className="p-6">
@@ -220,6 +354,14 @@ export default function ProjectDetailConsole({
                     <Badge variant={risk.severity === "critical" ? "danger" : "warning"}>{risk.severity}</Badge>
                   </div>
                   <div className="mt-2 text-sm leading-6 text-slate-600">{risk.detail}</div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+                    <span className="rounded-full bg-white px-2.5 py-1">{risk.status}</span>
+                    <span className="rounded-full bg-white px-2.5 py-1">Impact {risk.impact}</span>
+                    <span className="rounded-full bg-white px-2.5 py-1">Likelihood {risk.likelihood}</span>
+                    <span className="rounded-full bg-white px-2.5 py-1">{risk.ownerName}</span>
+                    {risk.taskTitle && <span className="rounded-full bg-white px-2.5 py-1">{risk.taskTitle}</span>}
+                    {risk.dueDate && <span className="rounded-full bg-white px-2.5 py-1">{formatDate(risk.dueDate)}</span>}
+                  </div>
                   <div className="mt-3 rounded-2xl bg-white px-3 py-3 text-sm text-slate-700">{risk.recommendation}</div>
                 </div>
               ))}
