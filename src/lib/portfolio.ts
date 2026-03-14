@@ -15,6 +15,7 @@ export type PortfolioTask = {
   createdAt: Date;
   updatedAt: Date;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  labels?: string[];
 };
 
 export type PortfolioProject = {

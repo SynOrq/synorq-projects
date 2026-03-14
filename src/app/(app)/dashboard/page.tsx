@@ -8,11 +8,21 @@ import {
   Clock3,
   FolderKanban,
   Gauge,
+  LineChart,
   Plus,
   UsersRound,
+  Zap,
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import {
+  buildClientRiskVisibility,
+  buildQuickActions,
+  buildRecentBlockers,
+  buildUpcomingDeadlines,
+  buildWeeklyCompletionTrend,
+  countOverloadedMembers,
+} from "@/lib/dashboard";
 import {
   analyzeProjects,
   analyzeTeamLoad,
@@ -92,6 +102,7 @@ export default async function DashboardPage() {
             createdAt: true,
             updatedAt: true,
             priority: true,
+            labels: true,
           },
         },
         milestones: {
@@ -242,6 +253,17 @@ export default async function DashboardPage() {
       tone: "bg-emerald-50 text-emerald-700",
     },
   ];
+  const weeklyTrend = buildWeeklyCompletionTrend(allTasks, now);
+  const upcomingDeadlines = buildUpcomingDeadlines(projects, allTasks, now);
+  const recentBlockers = buildRecentBlockers(projects, allTasks);
+  const clientRiskVisibility = buildClientRiskVisibility(projects);
+  const quickActions = buildQuickActions({
+    riskProjects: riskProjects.length,
+    unassignedTasks: unassignedTasks.length,
+    dueThisWeekProjects: deliveriesThisWeek.length,
+    overloadedMembers: countOverloadedMembers(teamLoad),
+  });
+  const trendMax = Math.max(1, ...weeklyTrend.map((item) => item.count));
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
@@ -281,19 +303,34 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button asChild>
-              <Link href="/projects/new">
-                <Plus size={16} />
-                Yeni proje ac
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/projects">
-                Portfoyu ac
-                <ArrowRight size={14} />
-              </Link>
-            </Button>
+          <div className="mt-6 grid gap-3 xl:grid-cols-[1.05fr_0.95fr]">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button asChild>
+                <Link href="/projects/new">
+                  <Plus size={16} />
+                  Yeni proje ac
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/projects">
+                  Portfoyu ac
+                  <ArrowRight size={14} />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              {quickActions.map((action) => (
+                <Link
+                  key={action.label}
+                  href={action.href}
+                  className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm transition hover:border-indigo-200 hover:bg-white"
+                >
+                  <div className="font-semibold text-slate-950">{action.label}</div>
+                  <div className="mt-1 text-xs text-slate-500">{action.detail}</div>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -312,6 +349,86 @@ export default async function DashboardPage() {
             </div>
           );
         })}
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
+        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Deadline Timeline</div>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Yaklasan teslimler ve kapanislar</h2>
+            </div>
+            <Link href="/reports/share" className="text-sm font-semibold text-indigo-600 hover:underline">
+              Executive view
+            </Link>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            {upcomingDeadlines.length === 0 && (
+              <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                Önümüzdeki 7 gün için planlı teslim görünmüyor.
+              </div>
+            )}
+
+            {upcomingDeadlines.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className="flex items-center justify-between gap-4 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-indigo-200 hover:bg-white"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                        item.tone === "risk"
+                          ? "bg-red-100 text-red-700"
+                          : item.tone === "steady"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-emerald-100 text-emerald-700"
+                      }`}
+                    >
+                      {item.type === "project" ? "Project" : "Task"}
+                    </span>
+                    <div className="truncate text-sm font-black text-slate-950">{item.title}</div>
+                  </div>
+                  <div className="mt-2 text-sm text-slate-600">{item.detail}</div>
+                </div>
+                <div className="text-right text-xs text-slate-500">
+                  <div>{formatDate(item.dueDate)}</div>
+                  <div className="mt-1">{formatRelative(item.dueDate)}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Completion Trend</div>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Son 7 gun throughput ritmi</h2>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              <LineChart size={13} />
+              {completedLast7Days} tamamlanan is
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-7 gap-3">
+            {weeklyTrend.map((point) => (
+              <div key={point.key} className="flex flex-col items-center gap-3 rounded-[24px] bg-slate-50 px-3 py-4">
+                <div className="flex h-28 items-end">
+                  <div
+                    className="w-8 rounded-t-2xl bg-gradient-to-t from-indigo-600 to-cyan-500"
+                    style={{ height: `${Math.max(12, Math.round((point.count / trendMax) * 100))}%` }}
+                  />
+                </div>
+                <div className="text-sm font-black text-slate-950">{point.count}</div>
+                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">{point.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -472,6 +589,46 @@ export default async function DashboardPage() {
         <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Recent Blockers</div>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Akisi bozan son engeller</h2>
+            </div>
+            <Link href="/my-tasks?segment=blocked" className="text-sm font-semibold text-indigo-600 hover:underline">
+              Blocked queue
+            </Link>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            {recentBlockers.length === 0 && (
+              <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                Aktif blocker sinyali görünmüyor.
+              </div>
+            )}
+
+            {recentBlockers.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className="flex items-center justify-between gap-4 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-indigo-200 hover:bg-white"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-black text-slate-950">{item.title}</div>
+                  <div className="mt-2 text-sm text-slate-600">{item.detail}</div>
+                </div>
+                <div
+                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    item.severity === "critical" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                  }`}
+                >
+                  {item.severity === "critical" ? "Critical" : "Watch"}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div>
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Team Capacity</div>
               <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Kapasite ve darbo gaz sinyali</h2>
             </div>
@@ -579,6 +736,61 @@ export default async function DashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Client Risk Visibility</div>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Hangi client sessiz, hangisi risk uretıyor</h2>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            <Zap size={13} />
+            client-first signal layer
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 xl:grid-cols-4">
+          {clientRiskVisibility.length === 0 && (
+            <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500 xl:col-span-4">
+              Client bagli risk sinyali bulunmuyor.
+            </div>
+          )}
+
+          {clientRiskVisibility.map((client) => (
+            <div key={client.name} className="rounded-[28px] border border-slate-200 bg-slate-50 p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-base font-black text-slate-950">{client.name}</div>
+                <Badge
+                  variant={
+                    client.health === "AT_RISK" ? "danger" : client.health === "WATCH" ? "warning" : "success"
+                  }
+                >
+                  {client.health === "AT_RISK" ? "At risk" : client.health === "WATCH" ? "Watch" : "Stable"}
+                </Badge>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-500">
+                <div className="rounded-2xl bg-white px-3 py-3">
+                  <div>Projeler</div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900">{client.projects}</div>
+                </div>
+                <div className="rounded-2xl bg-white px-3 py-3">
+                  <div>Riskte proje</div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900">{client.riskProjects}</div>
+                </div>
+                <div className="rounded-2xl bg-white px-3 py-3">
+                  <div>Open risk</div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900">{client.openRisks}</div>
+                </div>
+                <div className="rounded-2xl bg-white px-3 py-3">
+                  <div>Overdue task</div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900">{client.overdueTasks}</div>
+                </div>
+              </div>
+              <div className="mt-4 text-xs text-slate-500">son hareket {formatRelative(client.lastActivityAt)}</div>
+            </div>
+          ))}
         </div>
       </section>
     </div>

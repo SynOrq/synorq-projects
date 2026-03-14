@@ -40,11 +40,11 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
 ## Phase 1: Core P0 Product Surfaces
 
 - [ ] Dashboard ikinci iterasyon
-  - [ ] Quick actions bar
-  - [ ] Upcoming deadlines timeline
-  - [ ] Recent blockers
-  - [ ] Client risk visibility
-  - [ ] Weekly completion trend chart
+  - [x] Quick actions bar
+  - [x] Upcoming deadlines timeline
+  - [x] Recent blockers
+  - [x] Client risk visibility
+  - [x] Weekly completion trend chart
 - [ ] Notifications Center yeniden tasarlanacak
   - [x] Action Required tab
   - [x] Activity tab
