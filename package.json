@@ -7,6 +7,8 @@
     "dev:turbo": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "node --test --test-isolation=none --experimental-strip-types test/backend.test.ts",
+    "test:backend": "node --test --test-isolation=none --experimental-strip-types test/backend.test.ts",
     "lint": "eslint",
     "prisma:generate": "prisma generate",
     "db:seed": "npx prisma db seed",

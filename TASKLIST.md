@@ -69,13 +69,13 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Template-based project setup
   - [x] Starter tasks auto-generation
 - [ ] My Tasks ekraninin execution inbox seviyesine cikmasi
-  - [ ] today
-  - [ ] overdue
-  - [ ] review waiting
-  - [ ] blocked
-  - [ ] recently completed
-  - [ ] personal workload summary
-  - [ ] filters and saved segments
+  - [x] today
+  - [x] overdue
+  - [x] review waiting
+  - [x] blocked
+  - [x] recently completed
+  - [x] personal workload summary
+  - [x] filters and saved segments
 - [ ] Audit / Activity ekraninin enterprise timeline'a donusmesi
   - [ ] actor filter
   - [x] entity filter
@@ -84,22 +84,22 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [ ] diff preview
   - [ ] export CSV / JSON
 - [ ] Settings ekraninin tabbed console'a donusmesi
-  - [ ] Workspace
-  - [ ] Profile
-  - [ ] Team
-  - [ ] Permissions
-  - [ ] Notifications
+  - [x] Workspace
+  - [x] Profile
+  - [x] Team
+  - [x] Permissions
+  - [x] Notifications
   - [ ] Integrations
   - [ ] Billing
-  - [ ] Security
+  - [x] Security
 - [ ] Project detail sayfasi yeniden yapilandirilacak
-  - [ ] Overview
-  - [ ] Board
-  - [ ] List
+  - [x] Overview
+  - [x] Board
+  - [x] List
   - [ ] Timeline
   - [ ] Files
-  - [ ] Activity
-  - [ ] Risks
+  - [x] Activity
+  - [x] Risks
   - [ ] Settings
 
 ## Phase 2: P1 Strategic Modules

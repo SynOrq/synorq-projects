@@ -1,17 +1,37 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { ArrowRight, CheckSquare, Clock3, FolderKanban, Target, TriangleAlert } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { STATUS_CONFIG, PRIORITY_CONFIG } from "@/types";
-import { CheckSquare, ArrowRight, Clock3, FolderKanban, Target, TriangleAlert } from "lucide-react";
+import { PRIORITY_CONFIG, STATUS_CONFIG } from "@/types";
+import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 
-export default async function MyTasksPage() {
+type MyTasksPageProps = {
+  searchParams?: Promise<{
+    segment?: string;
+  }>;
+};
+
+const segmentOptions = [
+  { id: "all", label: "Tum aktif isler" },
+  { id: "today", label: "Bugun" },
+  { id: "overdue", label: "Gecikenler" },
+  { id: "review", label: "Review bekleyenler" },
+  { id: "blocked", label: "Blocked" },
+] as const;
+
+export default async function MyTasksPage({ searchParams }: MyTasksPageProps) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/login");
+  const userId = session.user.id;
+  const filters = await searchParams;
+  const selectedSegment = segmentOptions.some((item) => item.id === filters?.segment)
+    ? (filters?.segment as (typeof segmentOptions)[number]["id"])
+    : "all";
 
   const workspace = await db.workspace.findFirst({
-    where: { members: { some: { userId: session.user.id } } },
+    where: { members: { some: { userId } } },
   });
 
   if (!workspace) redirect("/auth/login");
@@ -19,34 +39,72 @@ export default async function MyTasksPage() {
   const tasks = await db.task.findMany({
     where: {
       project: { workspaceId: workspace.id },
-      assigneeId: session.user.id,
+      assigneeId: userId,
     },
-    include: { project: { select: { id: true, name: true, color: true } } },
-    orderBy: [{ status: "asc" }, { priority: "desc" }, { createdAt: "desc" }],
+    include: {
+      project: { select: { id: true, name: true, color: true } },
+      creator: { select: { id: true, name: true } },
+      _count: { select: { comments: true, subTasks: true } },
+    },
+    orderBy: [{ dueDate: "asc" }, { priority: "desc" }, { updatedAt: "desc" }],
   });
+
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(todayStart);
+  todayEnd.setDate(todayEnd.getDate() + 1);
+  const weekBoundary = new Date(todayStart);
+  weekBoundary.setDate(weekBoundary.getDate() + 7);
+  const lastWeek = new Date(todayStart);
+  lastWeek.setDate(lastWeek.getDate() - 7);
 
   const activeTasks = tasks.filter((task) => task.status !== "DONE" && task.status !== "CANCELLED");
   const completedTasks = tasks.filter((task) => task.status === "DONE");
-  const now = new Date();
-  const dueSoonBoundary = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const overdueTasks = activeTasks.filter((task) => task.dueDate && new Date(task.dueDate) < now);
+  const todayTasks = activeTasks.filter((task) => {
+    if (!task.dueDate) return false;
+    const dueDate = new Date(task.dueDate);
+    return dueDate >= todayStart && dueDate < todayEnd;
+  });
+  const overdueTasks = activeTasks.filter((task) => task.dueDate && new Date(task.dueDate) < todayStart);
+  const reviewTasks = activeTasks.filter((task) => task.status === "IN_REVIEW");
+  const blockedTasks = activeTasks.filter((task) => task.labels.includes("Blocked"));
   const dueSoonTasks = activeTasks.filter((task) => {
     if (!task.dueDate) return false;
     const dueDate = new Date(task.dueDate);
-    return dueDate >= now && dueDate <= dueSoonBoundary;
+    return dueDate >= todayStart && dueDate <= weekBoundary;
   });
-  const focusTasks = activeTasks.slice(0, 4);
+  const completedLast7Days = completedTasks.filter((task) => task.completedAt && new Date(task.completedAt) >= lastWeek);
+
+  const activeList =
+    selectedSegment === "today"
+      ? todayTasks
+      : selectedSegment === "overdue"
+        ? overdueTasks
+        : selectedSegment === "review"
+          ? reviewTasks
+          : selectedSegment === "blocked"
+            ? blockedTasks
+            : activeTasks;
+
+  const focusTasks = [...activeTasks].sort((left, right) => {
+    const leftOverdue = left.dueDate ? new Date(left.dueDate) < todayStart : false;
+    const rightOverdue = right.dueDate ? new Date(right.dueDate) < todayStart : false;
+    if (leftOverdue !== rightOverdue) return leftOverdue ? -1 : 1;
+    return right.updatedAt.getTime() - left.updatedAt.getTime();
+  }).slice(0, 4);
+
   const statusBreakdown = [
-    { label: "Aktif görev", value: activeTasks.length, tone: "from-indigo-500 to-blue-500", icon: Target },
-    { label: "Bu hafta teslim", value: dueSoonTasks.length, tone: "from-cyan-500 to-sky-500", icon: Clock3 },
+    { label: "Aktif gorev", value: activeTasks.length, tone: "from-indigo-500 to-blue-500", icon: Target },
+    { label: "Bugun teslim", value: todayTasks.length, tone: "from-cyan-500 to-sky-500", icon: Clock3 },
     { label: "Teslim riski", value: overdueTasks.length, tone: "from-rose-500 to-orange-500", icon: TriangleAlert },
-    { label: "Tamamlanan", value: completedTasks.length, tone: "from-emerald-500 to-teal-500", icon: CheckSquare },
+    { label: "7 gun throughput", value: completedLast7Days.length, tone: "from-emerald-500 to-teal-500", icon: CheckSquare },
   ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-6">
       <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
-        <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
+        <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">
               <FolderKanban size={13} />
@@ -57,13 +115,25 @@ export default async function MyTasksPage() {
               Gorevlerim
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-              Bana atanan isleri, teslim risklerini ve tamamlanan akisi tek calisma yuzeyinden izliyorum.
-              Synorq Projects icindeki execution layer burada odak listeme donusuyor.
+              Bugun yapilacaklar, gecikenler, review kuyrugu ve blocked isler ayni execution panelinde toplanir.
             </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {segmentOptions.map((segment) => (
+                <Link
+                  key={segment.id}
+                  href={segment.id === "all" ? "/my-tasks" : `/my-tasks?segment=${segment.id}`}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    selectedSegment === segment.id ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {segment.label}
+                </Link>
+              ))}
+            </div>
           </div>
 
           <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4">
-            <div className="text-sm font-semibold text-slate-900">Odak listesi</div>
+            <div className="text-sm font-semibold text-slate-900">Bugunku odak</div>
             <div className="mt-3 space-y-2">
               {focusTasks.length === 0 && (
                 <div className="rounded-2xl bg-white px-4 py-6 text-sm text-slate-500">
@@ -103,24 +173,26 @@ export default async function MyTasksPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-xl font-black text-slate-950">Aktif gorev akisi</h2>
-              <p className="mt-1 text-sm text-slate-500">Rol, teslim tarihi ve oncelik sinyaliyle calisan gorev listesi.</p>
+              <h2 className="text-xl font-black text-slate-950">Execution queue</h2>
+              <p className="mt-1 text-sm text-slate-500">Today, overdue, review ve blocked segmentleri ayni akis icinde okunur.</p>
             </div>
-            <div className="text-sm font-semibold text-slate-500">{activeTasks.length} acik gorev</div>
+            <div className="text-sm font-semibold text-slate-500">{activeList.length} kayit</div>
           </div>
+
           <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
-            {activeTasks.length === 0 ? (
-              <div className="p-10 text-center text-sm text-slate-500">Harika, su anda uzerinizde acik gorev yok.</div>
+            {activeList.length === 0 ? (
+              <div className="p-10 text-center text-sm text-slate-500">Secili segmentte gorev bulunmuyor.</div>
             ) : (
               <div className="divide-y divide-slate-100">
-                {activeTasks.map((task) => {
+                {activeList.map((task) => {
                   const sc = STATUS_CONFIG[task.status as keyof typeof STATUS_CONFIG];
                   const pc = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG];
-                  const isOverdue = Boolean(task.dueDate && new Date(task.dueDate) < now);
+                  const isOverdue = Boolean(task.dueDate && new Date(task.dueDate) < todayStart);
+                  const isToday = Boolean(task.dueDate && new Date(task.dueDate) >= todayStart && new Date(task.dueDate) < todayEnd);
                   return (
                     <Link
                       key={task.id}
@@ -144,11 +216,10 @@ export default async function MyTasksPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <div className="truncate text-sm font-semibold text-slate-900">{task.title}</div>
-                            {isOverdue && (
-                              <span className="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-700">
-                                Gecikti
-                              </span>
-                            )}
+                            {isOverdue && <span className="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-700">Gecikti</span>}
+                            {!isOverdue && isToday && <span className="rounded-full bg-cyan-100 px-2.5 py-1 text-[11px] font-semibold text-cyan-700">Bugun</span>}
+                            {task.status === "IN_REVIEW" && <span className="rounded-full bg-purple-100 px-2.5 py-1 text-[11px] font-semibold text-purple-700">Review</span>}
+                            {task.labels.includes("Blocked") && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">Blocked</span>}
                           </div>
                           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                             <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
@@ -157,11 +228,10 @@ export default async function MyTasksPage() {
                             </span>
                             <span className={`rounded-full px-2.5 py-1 font-medium ${sc.bg} ${sc.color}`}>{sc.label}</span>
                             <span className={`rounded-full px-2.5 py-1 font-medium ${pc.bg} ${pc.color}`}>{pc.label}</span>
-                            {task.dueDate && (
-                              <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
-                                {formatDate(task.dueDate)}
-                              </span>
-                            )}
+                            {task.dueDate && <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">{formatDate(task.dueDate)}</span>}
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
+                              {task._count.comments} yorum • {task._count.subTasks} alt gorev
+                            </span>
                           </div>
                         </div>
                         <ArrowRight size={16} className="mt-1 text-slate-300 transition-colors group-hover:text-slate-500" />
@@ -176,33 +246,37 @@ export default async function MyTasksPage() {
 
         <div className="space-y-6">
           <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-black text-slate-950">Teslim sinyalleri</h2>
+            <h2 className="text-lg font-black text-slate-950">Workload snapshot</h2>
             <div className="mt-4 space-y-3">
               <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3">
                 <div className="text-sm font-semibold text-red-700">Geciken gorevler</div>
-                <div className="mt-1 text-sm text-red-600">{overdueTasks.length} is aksiyona ihtiyac duyuyor.</div>
+                <div className="mt-1 text-sm text-red-600">{overdueTasks.length} is bugun aksiyon istiyor.</div>
               </div>
               <div className="rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3">
                 <div className="text-sm font-semibold text-cyan-800">Bu hafta teslim</div>
                 <div className="mt-1 text-sm text-cyan-700">{dueSoonTasks.length} gorev yaklasan takvimde.</div>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <div className="text-sm font-semibold text-slate-800">Tamamlanma ritmi</div>
-                <div className="mt-1 text-sm text-slate-600">{completedTasks.length} gorev tamamlandi ve arsivlenmeye hazir.</div>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
+                <div className="text-sm font-semibold text-amber-800">Blocked</div>
+                <div className="mt-1 text-sm text-amber-700">{blockedTasks.length} gorev destek veya karar bekliyor.</div>
+              </div>
+              <div className="rounded-2xl border border-purple-100 bg-purple-50 px-4 py-3">
+                <div className="text-sm font-semibold text-purple-800">Review queue</div>
+                <div className="mt-1 text-sm text-purple-700">{reviewTasks.length} gorev inceleme bekliyor.</div>
               </div>
             </div>
           </section>
 
           <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 px-5 py-4">
-              <h2 className="text-lg font-black text-slate-950">Tamamlananlar</h2>
-              <p className="mt-1 text-sm text-slate-500">{completedTasks.length} gorev kapanis akisinda.</p>
+              <h2 className="text-lg font-black text-slate-950">Recently completed</h2>
+              <p className="mt-1 text-sm text-slate-500">{completedLast7Days.length} gorev son 7 gunde kapandi.</p>
             </div>
-            {completedTasks.length === 0 ? (
-              <div className="px-5 py-8 text-sm text-slate-500">Henuz tamamlanan gorev yok.</div>
+            {completedLast7Days.length === 0 ? (
+              <div className="px-5 py-8 text-sm text-slate-500">Son 7 gunde tamamlanan gorev yok.</div>
             ) : (
               <div className="divide-y divide-slate-100">
-                {completedTasks.map((task) => {
+                {completedLast7Days.map((task) => {
                   const sc = STATUS_CONFIG[task.status as keyof typeof STATUS_CONFIG];
                   return (
                     <Link

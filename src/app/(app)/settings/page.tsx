@@ -12,17 +12,37 @@ export default async function SettingsPage() {
   const workspace = await db.workspace.findFirst({
     where: { members: { some: { userId } } },
     include: {
+      owner: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
       members: {
-        where: { userId },
-        select: { role: true },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              createdAt: true,
+            },
+          },
+        },
+        orderBy: [{ joinedAt: "asc" }],
       },
     },
   });
 
   if (!workspace) redirect("/auth/login");
 
-  const currentRole = workspace.members[0]?.role;
-  const canManageWorkspace = workspace.ownerId === userId || currentRole === "ADMIN";
+  const membership = workspace.members.find((member) => member.userId === userId);
+  const currentRole = membership?.role ?? "MEMBER";
+  const isOwner = workspace.ownerId === userId;
+  const canManageWorkspace = isOwner || currentRole === "ADMIN";
   const workspaceState = await findWorkspaceState({
     workspaceId: workspace.id,
     userId,
@@ -37,9 +57,12 @@ export default async function SettingsPage() {
   return (
     <SettingsConsole
       initialWorkspace={{
+        id: workspace.id,
         name: workspace.name,
         description: workspace.description,
         logoUrl: workspace.logoUrl,
+        createdAt: workspace.createdAt,
+        owner: workspace.owner,
       }}
       initialUser={{
         name: session.user?.name ?? null,
@@ -51,7 +74,14 @@ export default async function SettingsPage() {
         activityAlertsEnabled: workspaceState?.activityAlertsEnabled ?? true,
         weeklyDigestEnabled: workspaceState?.weeklyDigestEnabled ?? false,
       }}
+      initialMembers={workspace.members}
+      currentUserId={userId}
+      currentAccess={{
+        role: isOwner ? "OWNER" : currentRole,
+        isOwner,
+      }}
       canManageWorkspace={canManageWorkspace}
+      canManageMembers={canManageWorkspace}
       logoutAction={logoutAction}
     />
   );

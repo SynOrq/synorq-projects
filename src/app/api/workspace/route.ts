@@ -1,30 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-
-function normalizeText(value: unknown) {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-function normalizeUrl(value: unknown) {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  if (trimmed.startsWith("/")) return trimmed;
-
-  try {
-    const parsed = new URL(trimmed);
-    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
-      return trimmed;
-    }
-  } catch {
-    return undefined;
-  }
-
-  return undefined;
-}
+import { normalizeWorkspacePayload } from "@/lib/settings";
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -53,26 +30,19 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Bu işlem için yönetici yetkisi gerekir." }, { status: 403 });
     }
 
-    const body = await req.json();
-    const name = normalizeText(body.name);
-    const description = "description" in body ? normalizeText(body.description) : workspace.description;
-    const logoUrl = "logoUrl" in body ? normalizeUrl(body.logoUrl) : workspace.logoUrl;
-
-    if (!name) {
-      return NextResponse.json({ error: "Workspace adı zorunludur." }, { status: 400 });
+    const body = (await req.json()) as Record<string, unknown>;
+    const payload = normalizeWorkspacePayload(body, {
+      description: workspace.description,
+      logoUrl: workspace.logoUrl,
+    });
+    if ("error" in payload) {
+      return NextResponse.json({ error: payload.error }, { status: 400 });
     }
-
-    if (logoUrl === undefined) {
-      return NextResponse.json({ error: "Logo URL gecersiz." }, { status: 400 });
-    }
+    const data = payload.data;
 
     const updatedWorkspace = await db.workspace.update({
       where: { id: workspace.id },
-      data: {
-        name,
-        description,
-        logoUrl,
-      },
+      data,
       select: {
         id: true,
         name: true,

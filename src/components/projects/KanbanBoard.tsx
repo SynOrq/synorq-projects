@@ -7,12 +7,12 @@ import { cn, formatDate } from "@/lib/utils";
 import { Avatar } from "@/components/ui/avatar";
 import TaskModal from "@/components/tasks/TaskModal";
 import type { TaskCardData } from "@/lib/task-detail";
-import type { Project, Section, User } from "@prisma/client";
+import type { Section, User } from "@prisma/client";
 
 type SectionWithTasks = Section & { tasks: TaskCardData[] };
 
 interface Props {
-  project: Project;
+  project: { id: string };
   sections: SectionWithTasks[];
   members: Pick<User, "id" | "name" | "image" | "email">[];
 }
