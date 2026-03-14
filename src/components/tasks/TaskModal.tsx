@@ -56,6 +56,22 @@ function describeActivity(activity: TaskActivityData) {
           ? metadata.changes.map((change) => `${change.label}: ${change.from ?? "-"} -> ${change.to ?? "-"}`).join(" | ")
           : "Alanlar güncellendi.",
       };
+    case "task.assignee_changed":
+      return {
+        title: "Sahiplik degisti",
+        detail: metadata?.changes?.length
+          ? metadata.changes.map((change) => `${change.label}: ${change.from ?? "-"} -> ${change.to ?? "-"}`).join(" | ")
+          : "Atanan kisi guncellendi.",
+      };
+    case "task.due_date_changed":
+      return {
+        title: "Teslim tarihi degisti",
+        detail: metadata?.changes?.length
+          ? metadata.changes.map((change) => `${change.label}: ${change.from ?? "-"} -> ${change.to ?? "-"}`).join(" | ")
+          : "Teslim tarihi guncellendi.",
+      };
+    case "task.deleted":
+      return { title: "Gorev silindi", detail: metadata?.title ? `"${metadata.title}" kaldirildi.` : "Gorev kaydi silindi." };
     case "task.subtask.created":
       return { title: "Alt görev eklendi", detail: metadata?.title ? `"${metadata.title}" eklendi.` : "Alt görev oluşturuldu." };
     case "task.subtask.updated":

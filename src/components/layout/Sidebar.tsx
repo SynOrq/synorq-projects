@@ -37,9 +37,9 @@ export default function Sidebar({ session, workspace, projects }: SidebarProps) 
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 flex h-screen w-60 flex-shrink-0 flex-col border-r border-slate-200 bg-white/95 backdrop-blur">
-      <div className="border-b border-slate-200 p-4">
-        <button className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 transition-colors hover:bg-slate-50">
+    <aside className="sticky top-0 flex h-screen w-56 flex-shrink-0 flex-col border-r border-slate-200 bg-white/95 backdrop-blur">
+      <div className="border-b border-slate-200 p-3">
+        <button className="group flex w-full items-center gap-2 rounded-xl px-2 py-2 transition-colors hover:bg-slate-50">
           <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
             {workspace?.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -57,13 +57,13 @@ export default function Sidebar({ session, workspace, projects }: SidebarProps) 
             <div className="truncate text-sm font-semibold text-slate-950">
               {workspace?.name ?? "Workspace"}
             </div>
-            <div className="text-xs text-slate-400">Synorq Platform</div>
+            <div className="text-[11px] text-slate-400">Synorq Platform</div>
           </div>
           <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600" />
         </button>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto p-2.5">
         {navItems.map(({ href, icon: Icon, label }) => (
           <Link
             key={href}
@@ -82,7 +82,7 @@ export default function Sidebar({ session, workspace, projects }: SidebarProps) 
 
         <div className="pt-4 pb-1">
           <div className="mb-1 flex items-center justify-between px-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               Projeler
             </span>
             <Link
@@ -97,7 +97,7 @@ export default function Sidebar({ session, workspace, projects }: SidebarProps) 
               key={p.id}
               href={`/projects/${p.id}`}
               className={cn(
-                "flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm transition-all",
+                "flex items-center gap-2 rounded-xl px-3 py-1.5 text-[13px] transition-all",
                 pathname.startsWith(`/projects/${p.id}`)
                   ? "bg-[linear-gradient(135deg,rgba(99,102,241,0.12),rgba(6,182,212,0.10))] font-medium text-indigo-700"
                   : "text-slate-600 hover:bg-slate-50"
@@ -116,14 +116,14 @@ export default function Sidebar({ session, workspace, projects }: SidebarProps) 
         </div>
       </nav>
 
-      <div className="border-t border-slate-200 p-3">
-        <div className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-2 transition-colors hover:bg-slate-50">
+      <div className="border-t border-slate-200 p-2.5">
+        <div className="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-2 transition-colors hover:bg-slate-50">
           <Avatar name={session.user?.name} image={session.user?.image} size="sm" />
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium text-slate-950">
               {session.user?.name ?? "Kullanıcı"}
             </div>
-            <div className="truncate text-xs text-slate-400">{session.user?.email}</div>
+            <div className="truncate text-[11px] text-slate-400">{session.user?.email}</div>
           </div>
         </div>
       </div>

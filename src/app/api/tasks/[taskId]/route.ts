@@ -111,6 +111,7 @@ export async function PATCH(
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
     }
+    const currentUserId = session.user.id;
 
     const { taskId } = await params;
     const body = await req.json();
@@ -231,19 +232,56 @@ export async function PATCH(
       include: taskCardInclude,
     });
 
-    if (changes.length > 0) {
-      await db.activityLog.create({
+    const specialChanges = new Set(changes.map((change) => change.field));
+    const activityPayloads: Array<{
+      action: string;
+      metadata: TaskActivityMetadata;
+    }> = [];
+
+    if (specialChanges.has("assigneeId")) {
+      activityPayloads.push({
+        action: "task.assignee_changed",
+        metadata: {
+          taskId,
+          targetUserId: updateData.assigneeId,
+          targetUserName: nextAssigneeName,
+          changes: changes.filter((change) => change.field === "assigneeId"),
+        },
+      });
+    }
+
+    if (specialChanges.has("dueDate")) {
+      activityPayloads.push({
+        action: "task.due_date_changed",
+        metadata: {
+          taskId,
+          changes: changes.filter((change) => change.field === "dueDate"),
+        },
+      });
+    }
+
+    const genericChanges = changes.filter((change) => !["assigneeId", "dueDate"].includes(change.field));
+    if (genericChanges.length > 0) {
+      activityPayloads.push({
+        action: "task.updated",
+        metadata: {
+          taskId,
+          changes: genericChanges,
+        },
+      });
+    }
+
+    if (activityPayloads.length > 0) {
+      await Promise.all(activityPayloads.map((entry) =>
+        db.activityLog.create({
         data: {
           workspaceId: existingTask.project.workspaceId,
           projectId: existingTask.project.id,
-          userId: session.user.id,
-          action: "task.updated",
-          metadata: {
-            taskId,
-            changes,
-          },
+          userId: currentUserId,
+          action: entry.action,
+          metadata: entry.metadata,
         },
-      });
+      })));
     }
 
     return NextResponse.json(task);
@@ -262,6 +300,7 @@ export async function DELETE(
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
     }
+    const currentUserId = session.user.id;
 
     const { taskId } = await params;
     const task = await db.task.findFirst({
@@ -271,6 +310,9 @@ export async function DELETE(
       },
       select: {
         id: true,
+        title: true,
+        projectId: true,
+        project: { select: { workspaceId: true } },
       },
     });
 
@@ -279,6 +321,18 @@ export async function DELETE(
     }
 
     await db.task.delete({ where: { id: taskId } });
+    await db.activityLog.create({
+      data: {
+        workspaceId: task.project.workspaceId,
+        projectId: task.projectId,
+        userId: currentUserId,
+        action: "task.deleted",
+        metadata: {
+          taskId: task.id,
+          title: task.title,
+        },
+      },
+    });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[tasks/DELETE]", err);

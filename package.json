@@ -9,7 +9,11 @@
     "start": "next start",
     "lint": "eslint",
     "prisma:generate": "prisma generate",
+    "db:seed": "npx prisma db seed",
     "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

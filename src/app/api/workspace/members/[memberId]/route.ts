@@ -80,6 +80,10 @@ export async function PATCH(
         metadata: {
           memberId: member.id,
           targetUserId: member.userId,
+          targetUserEmail: member.user.email,
+          targetUserName: member.user.name,
+          roleFrom: member.role,
+          roleTo: role,
           role,
         },
       },

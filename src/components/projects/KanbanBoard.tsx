@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Plus, MoreHorizontal, MessageSquare, GitBranch, Calendar } from "lucide-react";
+import { Plus, MoreHorizontal, MessageSquare, GitBranch, Calendar, AlertTriangle } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 import { Avatar } from "@/components/ui/avatar";
 import TaskModal from "@/components/tasks/TaskModal";
@@ -19,6 +19,13 @@ interface Props {
 
 const PRIORITY_DOT: Record<string, string> = {
   LOW: "bg-slate-400", MEDIUM: "bg-blue-500", HIGH: "bg-orange-500", URGENT: "bg-red-500",
+};
+
+const PRIORITY_BADGE: Record<string, string> = {
+  LOW: "bg-slate-100 text-slate-600",
+  MEDIUM: "bg-blue-100 text-blue-700",
+  HIGH: "bg-orange-100 text-orange-700",
+  URGENT: "bg-red-100 text-red-700",
 };
 
 export default function KanbanBoard({ project, sections: initialSections, members }: Props) {
@@ -147,18 +154,33 @@ export default function KanbanBoard({ project, sections: initialSections, member
                               snapshot.isDragging && "shadow-xl shadow-indigo-100 rotate-1 border-indigo-200"
                             )}
                           >
-                            {/* Priority + Title */}
+                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                              <span className={cn("rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]", PRIORITY_BADGE[task.priority])}>
+                                {task.priority}
+                              </span>
+                              {task.labels.slice(0, 2).map((label) => (
+                                <span key={label} className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600">
+                                  {label}
+                                </span>
+                              ))}
+                            </div>
+
                             <div className="flex items-start gap-2 mb-2.5">
                               <span className={cn("w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0", PRIORITY_DOT[task.priority])} />
-                              <p className="text-sm font-medium text-gray-800 leading-snug line-clamp-2">
+                              <p className="text-sm font-medium text-gray-800 leading-snug line-clamp-2 flex-1">
                                 {task.title}
                               </p>
                             </div>
 
                             {/* Due date */}
                             {task.dueDate && (
-                              <div className="flex items-center gap-1 text-xs text-gray-400 mb-2.5">
-                                <Calendar size={11} />
+                              <div className={cn(
+                                "mb-2.5 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium",
+                                new Date(task.dueDate) < new Date()
+                                  ? "bg-red-50 text-red-700"
+                                  : "bg-slate-100 text-slate-500"
+                              )}>
+                                {new Date(task.dueDate) < new Date() ? <AlertTriangle size={11} /> : <Calendar size={11} />}
                                 {formatDate(task.dueDate)}
                               </div>
                             )}

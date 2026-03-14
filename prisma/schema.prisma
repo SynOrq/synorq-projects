@@ -24,6 +24,8 @@ model User {
 
   workspaceMembers WorkspaceMember[]
   ownedWorkspaces  Workspace[]       @relation("WorkspaceOwner")
+  managedProjects  Project[]         @relation("ProjectOwner")
+  ownedClients     Client[]          @relation("ClientOwner")
   assignedTasks    Task[]            @relation("TaskAssignee")
   createdTasks     Task[]            @relation("TaskCreator")
   comments         Comment[]
@@ -87,6 +89,7 @@ model Workspace {
 
   owner   User              @relation("WorkspaceOwner", fields: [ownerId], references: [id])
   members WorkspaceMember[]
+  clients Client[]
   projects Project[]
   states  WorkspaceUserState[]
 }
@@ -115,16 +118,23 @@ enum WorkspaceRole {
 model Project {
   id          String        @id @default(cuid())
   workspaceId String
+  ownerId     String?
+  clientId    String?
   name        String
   description String?
   color       String        @default("#6366f1")
   status      ProjectStatus @default(ACTIVE)
+  type        ProjectType   @default(INTERNAL)
+  priority    Priority      @default(MEDIUM)
+  tags        String[]      @default([])
   startDate   DateTime?
   dueDate     DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner        User?         @relation("ProjectOwner", fields: [ownerId], references: [id])
+  client       Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
   sections     Section[]
   tasks        Task[]
   activityLogs ActivityLog[]
@@ -135,6 +145,39 @@ enum ProjectStatus {
   ON_HOLD
   COMPLETED
   ARCHIVED
+}
+
+enum ProjectType {
+  WEBSITE
+  MOBILE_APP
+  RETAINER
+  INTERNAL
+  MAINTENANCE
+}
+
+model Client {
+  id          String       @id @default(cuid())
+  workspaceId String
+  ownerId     String?
+  name        String
+  slug        String
+  industry    String?
+  notes       String?
+  health      ClientHealth @default(STABLE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner     User?     @relation("ClientOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  projects  Project[]
+
+  @@unique([workspaceId, slug])
+}
+
+enum ClientHealth {
+  STABLE
+  WATCH
+  AT_RISK
 }
 
 // ─── Section ─────────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import type { Task, Project, Section, User, WorkspaceMember, Workspace } from "@
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "CANCELLED";
 export type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type ProjectStatus = "ACTIVE" | "ON_HOLD" | "COMPLETED" | "ARCHIVED";
+export type ProjectType = "WEBSITE" | "MOBILE_APP" | "RETAINER" | "INTERNAL" | "MAINTENANCE";
 
 export type TaskWithRelations = Task & {
   assignee: User | null;
@@ -44,4 +45,12 @@ export const PROJECT_COLORS = [
   "#6366f1", "#8b5cf6", "#ec4899", "#f43f5e",
   "#f97316", "#eab308", "#22c55e", "#14b8a6",
   "#06b6d4", "#3b82f6",
+];
+
+export const PROJECT_TYPE_OPTIONS: Array<{ value: ProjectType; label: string; description: string }> = [
+  { value: "WEBSITE", label: "Website", description: "Website delivery, redesign or launch rollout." },
+  { value: "MOBILE_APP", label: "Mobile app", description: "iOS/Android product or pilot release." },
+  { value: "RETAINER", label: "Retainer", description: "Ongoing client operations and recurring delivery." },
+  { value: "INTERNAL", label: "Internal", description: "Internal initiative, playbook or operations work." },
+  { value: "MAINTENANCE", label: "Maintenance", description: "Support, QA and post-launch service work." },
 ];

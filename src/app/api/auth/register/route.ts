@@ -48,9 +48,13 @@ export async function POST(req: NextRequest) {
     await db.project.create({
       data: {
         workspaceId: workspace.id,
+        ownerId: user.id,
         name: "İlk Projem",
         description: "Synorq Projects'e hoş geldiniz! Bu örnek projeyi keşfedin.",
         color: "#6366f1",
+        type: "INTERNAL",
+        priority: "MEDIUM",
+        tags: ["onboarding", "starter"],
         sections: {
           create: [
             { name: "Yapılacak",     order: 0 },

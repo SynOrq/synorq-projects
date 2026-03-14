@@ -21,6 +21,7 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json();
     const now = new Date();
+    const preferenceKeys: string[] = [];
     const updates: {
       notificationsReadAt?: Date | null;
       onboardingDismissedAt?: Date | null;
@@ -43,14 +44,17 @@ export async function PATCH(req: NextRequest) {
 
     if (typeof body.riskAlertsEnabled === "boolean") {
       updates.riskAlertsEnabled = body.riskAlertsEnabled;
+      preferenceKeys.push("riskAlertsEnabled");
     }
 
     if (typeof body.activityAlertsEnabled === "boolean") {
       updates.activityAlertsEnabled = body.activityAlertsEnabled;
+      preferenceKeys.push("activityAlertsEnabled");
     }
 
     if (typeof body.weeklyDigestEnabled === "boolean") {
       updates.weeklyDigestEnabled = body.weeklyDigestEnabled;
+      preferenceKeys.push("weeklyDigestEnabled");
     }
 
     if (Object.keys(updates).length === 0) {
@@ -68,6 +72,19 @@ export async function PATCH(req: NextRequest) {
         { error: "Workspace state modeli henuz yuklenmedi. Dev serveri yeniden baslatin." },
         { status: 503 }
       );
+    }
+
+    if (preferenceKeys.length > 0) {
+      await db.activityLog.create({
+        data: {
+          workspaceId: workspace.id,
+          userId: session.user.id,
+          action: "workspace.preference_changed",
+          metadata: {
+            preferenceKeys,
+          },
+        },
+      });
     }
 
     return NextResponse.json({ state });

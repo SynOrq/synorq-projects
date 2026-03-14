@@ -20,6 +20,8 @@ export default async function ProjectPage({
       workspace: { members: { some: { userId: session.user.id } } },
     },
     include: {
+      owner: { select: { name: true, email: true } },
+      client: { select: { name: true } },
       sections: {
         orderBy: { order: "asc" },
         include: {

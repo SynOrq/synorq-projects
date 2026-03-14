@@ -55,16 +55,25 @@ export type TaskActivityChange = {
 
 export type TaskActivityMetadata = {
   taskId?: string;
+  projectId?: string;
   attachmentId?: string;
   changes?: TaskActivityChange[];
   commentId?: string;
+  field?: string;
   fromSectionName?: string | null;
   name?: string;
   role?: string;
+  roleFrom?: string | null;
+  roleTo?: string | null;
   status?: string;
   subTaskId?: string;
+  targetUserEmail?: string | null;
+  targetUserId?: string | null;
+  targetUserName?: string | null;
   title?: string;
   toSectionName?: string | null;
+  clientName?: string | null;
+  preferenceKeys?: string[];
 };
 
 export type TaskDetailResponse = TaskDetailData & {

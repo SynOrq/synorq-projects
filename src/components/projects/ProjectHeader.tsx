@@ -4,10 +4,18 @@ import Link from "next/link";
 import { ChevronRight, Settings, Plus, LayoutList, Columns, LayoutPanelTop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import type { Project } from "@prisma/client";
 
 interface Props {
-  project: Project;
+  project: {
+    id: string;
+    name: string;
+    description: string | null;
+    color: string;
+    type: string;
+    priority: string;
+    owner: { name: string | null; email: string } | null;
+    client: { name: string } | null;
+  };
   taskCount: number;
 }
 
@@ -32,6 +40,14 @@ export default function ProjectHeader({ project, taskCount }: Props) {
             <span className="h-4 w-4 flex-shrink-0 rounded-full" style={{ background: project.color }} />
             <h1 className="text-2xl font-black tracking-tight text-slate-950">{project.name}</h1>
             <span className="text-sm text-slate-400">{taskCount} gorev</span>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+            <span className="rounded-full bg-slate-100 px-2.5 py-1">{project.client?.name ?? "Internal"}</span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1">
+              {project.owner?.name ?? project.owner?.email ?? "Owner tanimsiz"}
+            </span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1">{project.type.replace("_", " ")}</span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1">{project.priority}</span>
           </div>
           {project.description && (
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{project.description}</p>

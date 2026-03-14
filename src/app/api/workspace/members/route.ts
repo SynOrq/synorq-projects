@@ -84,6 +84,9 @@ export async function POST(req: NextRequest) {
         metadata: {
           invitedUserId: user.id,
           invitedEmail: user.email,
+          targetUserId: user.id,
+          targetUserEmail: user.email,
+          targetUserName: user.name,
           role,
         },
       },

@@ -1,0 +1,195 @@
+# Synorq Product Delivery Task List
+
+Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine tasimak icin eksiksiz backlog olarak tutulur.
+
+## Phase 0: Alignment and Foundations
+
+- [x] Demo seed verisi olusturuldu ve calistirilabilir hale getirildi
+- [x] Dashboard aksiyon odakli delivery control surface'e donusturuldu
+- [x] Projects ekranina richer cards, portfolio summary ve table view eklendi
+- [x] Kanban task card'lari priority, label, due-date ve signal alanlariyla guclendirildi
+- [x] SaaS shell topbar/sidebar daha kompakt hale getirildi
+- [x] Proje veri modeli genisletildi
+  - [x] Client/company entity
+  - [x] Project owner
+  - [x] Project type
+  - [x] Project priority
+  - [x] Project tags
+  - [ ] Visibility/access strategy
+  - [ ] Health score persistence or derived strategy
+- [ ] Milestone veri modeli eklenecek
+- [ ] Risk register veri modeli eklenecek
+- [ ] Team capacity/workload veri modeli eklenecek
+- [ ] Audit event taxonomy genisletilecek
+  - [ ] project.created
+  - [ ] project.updated
+  - [ ] task.deleted
+  - [ ] task.assignee_changed
+  - [ ] task.due_date_changed
+  - [ ] risk.created / updated
+  - [ ] milestone.created / updated
+  - [ ] workspace.preference_changed
+  - [ ] export.created
+- [ ] Ortak analytics helpers genisletilecek
+  - [ ] portfolio health
+  - [ ] team workload
+  - [ ] milestone progress
+  - [ ] risk severity
+  - [ ] weekly reporting metrics
+
+## Phase 1: Core P0 Product Surfaces
+
+- [ ] Dashboard ikinci iterasyon
+  - [ ] Quick actions bar
+  - [ ] Upcoming deadlines timeline
+  - [ ] Recent blockers
+  - [ ] Client risk visibility
+  - [ ] Weekly completion trend chart
+- [ ] Notifications Center yeniden tasarlanacak
+  - [x] Action Required tab
+  - [x] Activity tab
+  - [x] Digest tab
+  - [x] filters: mine / risk / project updates / mention
+  - [ ] bulk actions
+  - [x] read-unread state
+  - [ ] archive
+  - [ ] snooze
+  - [ ] notification rule controls
+- [ ] Projects portfolio ikinci iterasyon
+  - [x] owner/client/type alanlari gosterilecek
+  - [ ] saved views kalici hale getirilecek
+  - [ ] portfolio risk trend
+  - [ ] owner-based distribution
+  - [ ] milestone progress
+  - [ ] workload summary
+- [x] New project flow wizard olarak yeniden yazildi
+  - [x] Step 1: Basic information
+  - [x] Step 2: Team and template
+  - [x] Step 3: Goals and delivery
+  - [x] Template-based project setup
+  - [x] Starter tasks auto-generation
+- [ ] My Tasks ekraninin execution inbox seviyesine cikmasi
+  - [ ] today
+  - [ ] overdue
+  - [ ] review waiting
+  - [ ] blocked
+  - [ ] recently completed
+  - [ ] personal workload summary
+  - [ ] filters and saved segments
+- [ ] Audit / Activity ekraninin enterprise timeline'a donusmesi
+  - [ ] actor filter
+  - [x] entity filter
+  - [x] severity filter
+  - [ ] date range filter
+  - [ ] diff preview
+  - [ ] export CSV / JSON
+- [ ] Settings ekraninin tabbed console'a donusmesi
+  - [ ] Workspace
+  - [ ] Profile
+  - [ ] Team
+  - [ ] Permissions
+  - [ ] Notifications
+  - [ ] Integrations
+  - [ ] Billing
+  - [ ] Security
+- [ ] Project detail sayfasi yeniden yapilandirilacak
+  - [ ] Overview
+  - [ ] Board
+  - [ ] List
+  - [ ] Timeline
+  - [ ] Files
+  - [ ] Activity
+  - [ ] Risks
+  - [ ] Settings
+
+## Phase 2: P1 Strategic Modules
+
+- [ ] Milestones / Timeline modulu
+  - [ ] milestone CRUD
+  - [ ] linked tasks
+  - [ ] owner and due date
+  - [ ] milestone progress
+  - [ ] timeline visualization
+- [ ] Risks modulu
+  - [ ] risk register list
+  - [ ] impact / likelihood scoring
+  - [ ] mitigation plan
+  - [ ] owner / due date
+  - [ ] linked project and tasks
+  - [ ] status workflow
+- [ ] Team capacity module
+  - [ ] active load by user
+  - [ ] due-date density
+  - [ ] weekly capacity
+  - [ ] workload heatmap
+  - [ ] overloaded / underloaded signals
+- [ ] Reports modulu
+  - [ ] weekly status report
+  - [ ] portfolio risk report
+  - [ ] team workload report
+  - [ ] delivery performance report
+  - [ ] shareable summary view
+- [ ] Smart onboarding flow
+  - [ ] guided checklist
+  - [ ] demo workspace state
+  - [ ] create-first-project flow
+  - [ ] add-team-member flow
+  - [ ] save-first-view flow
+- [ ] Global command/search center
+  - [ ] project search
+  - [ ] task search
+  - [ ] people search
+  - [ ] commands
+  - [ ] quick navigation
+
+## Phase 3: P2 Growth Modules
+
+- [ ] Client/company layer
+  - [ ] client health
+  - [ ] client owner
+  - [ ] project-to-client relationship
+  - [ ] notes / contract / retainer fields
+- [ ] Client-facing portal groundwork
+- [ ] Billing / plan / usage controls
+- [ ] Integrations
+  - [ ] Slack
+  - [ ] Google Calendar
+  - [ ] Webhooks / API keys
+- [ ] Automations engine
+- [ ] Executive weekly digest
+- [ ] AI-assisted summaries
+
+## Information Architecture
+
+- [ ] Main nav target
+  - [ ] Dashboard
+  - [ ] Projects
+  - [ ] Tasks
+  - [ ] Timeline
+  - [ ] Risks
+  - [ ] Team
+  - [ ] Activity
+  - [ ] Reports
+  - [ ] Settings
+- [ ] Project nav target
+  - [ ] Overview
+  - [ ] Board
+  - [ ] List
+  - [ ] Timeline
+  - [ ] Files
+  - [ ] Activity
+  - [ ] Risks
+  - [ ] Settings
+
+## Delivery Order
+
+1. Project metadata foundation + create wizard
+2. Notifications center redesign
+3. Project detail information architecture
+4. Audit/activity expansion
+5. My Tasks execution inbox upgrade
+6. Settings tabbed console
+7. Milestones
+8. Risks
+9. Team capacity
+10. Reports and command center
