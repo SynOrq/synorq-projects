@@ -219,7 +219,14 @@ export default function ProjectDetailConsole({
   if (currentTab === "timeline") {
     return (
       <div className="space-y-6 p-6">
-        <MilestoneManager projectId={project.id} items={milestones} ownerOptions={ownerOptions} taskOptions={taskOptions} />
+        <MilestoneManager
+          projectId={project.id}
+          items={milestones}
+          ownerOptions={ownerOptions}
+          taskOptions={taskOptions}
+          projectStartDate={project.startDate}
+          projectDueDate={project.dueDate}
+        />
 
         <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="text-lg font-black text-slate-950">Timeline context</div>

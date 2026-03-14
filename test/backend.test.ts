@@ -11,3 +11,5 @@ import "./projects-portfolio.test.ts";
 import "./audit.test.ts";
 import "./notifications.test.ts";
 import "./project-settings.test.ts";
+import "./workspace-timeline.test.ts";
+import "./workspace-risks.test.ts";

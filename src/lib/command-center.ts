@@ -62,6 +62,22 @@ export function buildCommandItems(params: {
       keywords: ["projects", "portfolio", "list"],
     },
     {
+      id: "nav-timeline",
+      title: "Timeline",
+      subtitle: "Workspace milestone and delivery calendar",
+      href: "/timeline",
+      group: "Navigate",
+      keywords: ["timeline", "calendar", "delivery", "milestones"],
+    },
+    {
+      id: "nav-risks",
+      title: "Risks",
+      subtitle: "Workspace risk register and escalation view",
+      href: "/risks",
+      group: "Navigate",
+      keywords: ["risks", "risk register", "escalation", "mitigation"],
+    },
+    {
       id: "nav-reports",
       title: "Reports",
       subtitle: "Executive summary and weekly report",

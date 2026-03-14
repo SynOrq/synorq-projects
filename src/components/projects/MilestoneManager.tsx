@@ -30,6 +30,8 @@ type Props = {
   items: MilestoneRecord[];
   ownerOptions: Option[];
   taskOptions: Option[];
+  projectStartDate: Date | null;
+  projectDueDate: Date | null;
 };
 
 const statusOptions: Option[] = [
@@ -44,6 +46,16 @@ function toDateInput(value: Date | null) {
   return new Date(value).toISOString().slice(0, 10);
 }
 
+function formatShortDate(value: Date) {
+  return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short" }).format(new Date(value));
+}
+
+function startOfDay(value: Date) {
+  const next = new Date(value);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
 function milestoneBadge(status: MilestoneRecord["status"]) {
   if (status === "AT_RISK") return "danger" as const;
   if (status === "IN_PROGRESS") return "warning" as const;
@@ -51,7 +63,14 @@ function milestoneBadge(status: MilestoneRecord["status"]) {
   return "secondary" as const;
 }
 
-export default function MilestoneManager({ projectId, items, ownerOptions, taskOptions }: Props) {
+export default function MilestoneManager({
+  projectId,
+  items,
+  ownerOptions,
+  taskOptions,
+  projectStartDate,
+  projectDueDate,
+}: Props) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -65,6 +84,51 @@ export default function MilestoneManager({ projectId, items, ownerOptions, taskO
   const [isPending, startTransition] = useTransition();
 
   const selectedMilestone = useMemo(() => items.find((item) => item.id === selectedId) ?? null, [items, selectedId]);
+  const timelineModel = useMemo(() => {
+    const datedMilestones = items
+      .filter((item) => item.dueDate)
+      .map((item) => ({ ...item, dueDate: startOfDay(new Date(item.dueDate!)) }))
+      .sort((left, right) => left.dueDate.getTime() - right.dueDate.getTime());
+
+    if (datedMilestones.length === 0) return null;
+
+    const today = startOfDay(new Date());
+    const startCandidates = [
+      projectStartDate ? startOfDay(new Date(projectStartDate)) : null,
+      datedMilestones[0].dueDate,
+      today,
+    ].filter((value): value is Date => Boolean(value));
+    const endCandidates = [
+      projectDueDate ? startOfDay(new Date(projectDueDate)) : null,
+      datedMilestones[datedMilestones.length - 1].dueDate,
+      today,
+    ].filter((value): value is Date => Boolean(value));
+
+    let start = new Date(Math.min(...startCandidates.map((value) => value.getTime())));
+    let end = new Date(Math.max(...endCandidates.map((value) => value.getTime())));
+    if (start.getTime() === end.getTime()) {
+      start = new Date(start.getTime() - 3 * 86400000);
+      end = new Date(end.getTime() + 3 * 86400000);
+    }
+
+    const totalRange = end.getTime() - start.getTime();
+    const points = datedMilestones.map((item, index) => ({
+      ...item,
+      lane: index % 3,
+      offset: ((item.dueDate.getTime() - start.getTime()) / totalRange) * 100,
+      isLate: item.dueDate.getTime() < today.getTime() && item.status !== "COMPLETED",
+      isSelected: item.id === selectedId,
+    }));
+
+    return {
+      start,
+      end,
+      totalDays: Math.max(1, Math.round(totalRange / 86400000)),
+      todayOffset: ((today.getTime() - start.getTime()) / totalRange) * 100,
+      overdueCount: points.filter((item) => item.isLate).length,
+      points,
+    };
+  }, [items, projectDueDate, projectStartDate, selectedId]);
 
   function resetForm() {
     setSelectedId(null);
@@ -148,6 +212,63 @@ export default function MilestoneManager({ projectId, items, ownerOptions, taskO
             <Plus size={14} />
             Yeni milestone
           </Button>
+        </div>
+        <div className="mt-5 rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.14),_transparent_42%),linear-gradient(180deg,#f8fbff_0%,#eef4ff_100%)] p-4">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span className="rounded-full bg-white px-2.5 py-1">Start {projectStartDate ? formatShortDate(new Date(projectStartDate)) : "not set"}</span>
+            <span className="rounded-full bg-white px-2.5 py-1">Target {projectDueDate ? formatShortDate(new Date(projectDueDate)) : "not set"}</span>
+            <span className="rounded-full bg-white px-2.5 py-1">{timelineModel ? `${timelineModel.totalDays} gunluk pencere` : "Tarih bekleniyor"}</span>
+            <span className="rounded-full bg-white px-2.5 py-1">{timelineModel ? `${timelineModel.overdueCount} geciken milestone` : "Timeline cizimi icin due date ekleyin"}</span>
+          </div>
+          {timelineModel ? (
+            <div className="mt-4 overflow-x-auto">
+              <div className="min-w-[720px] rounded-[24px] border border-white/60 bg-white/90 p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between text-xs font-medium text-slate-500">
+                  <span>{formatShortDate(timelineModel.start)}</span>
+                  <span>Today</span>
+                  <span>{formatShortDate(timelineModel.end)}</span>
+                </div>
+                <div className="relative h-52">
+                  <div className="absolute inset-x-0 top-24 h-[2px] rounded-full bg-slate-200" />
+                  <div
+                    className="absolute bottom-6 top-10 w-px border-l border-dashed border-slate-300"
+                    style={{ left: `${Math.min(100, Math.max(0, timelineModel.todayOffset))}%` }}
+                  />
+                  {timelineModel.points.map((milestone) => (
+                    <button
+                      key={milestone.id}
+                      type="button"
+                      onClick={() => startEdit(milestone)}
+                      className={`absolute w-44 -translate-x-1/2 rounded-[20px] border px-3 py-3 text-left shadow-sm transition hover:-translate-y-0.5 ${
+                        milestone.isSelected
+                          ? "border-indigo-300 bg-indigo-50"
+                          : milestone.isLate
+                            ? "border-red-200 bg-red-50"
+                            : "border-slate-200 bg-white"
+                      }`}
+                      style={{ left: `${milestone.offset}%`, top: `${12 + milestone.lane * 56}px` }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="truncate text-xs font-black uppercase tracking-[0.14em] text-slate-500">{formatShortDate(milestone.dueDate)}</div>
+                        <Badge variant={milestoneBadge(milestone.status)}>{milestone.status}</Badge>
+                      </div>
+                      <div className="mt-2 line-clamp-2 text-sm font-black text-slate-950">{milestone.title}</div>
+                      <div className="mt-2 text-xs text-slate-500">
+                        {milestone.completedTaskCount} / {milestone.taskCount} task • %{milestone.progress}
+                      </div>
+                    </button>
+                  ))}
+                  {timelineModel.points.map((milestone) => (
+                    <div key={`${milestone.id}-node`} className="absolute top-[92px] h-4 w-4 -translate-x-1/2 rounded-full border-4 border-white shadow-sm" style={{ left: `${milestone.offset}%`, backgroundColor: milestone.status === "COMPLETED" ? "#10b981" : milestone.status === "AT_RISK" ? "#ef4444" : milestone.status === "IN_PROGRESS" ? "#f59e0b" : "#6366f1" }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-[24px] border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-sm text-slate-500">
+              Timeline gorsellestirmesi icin en az bir milestone due date&apos;i tanimlayin.
+            </div>
+          )}
         </div>
         <div className="mt-5 space-y-4">
           {items.length === 0 && (

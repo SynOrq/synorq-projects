@@ -104,19 +104,19 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
 
 ## Phase 2: P1 Strategic Modules
 
-- [ ] Milestones / Timeline modulu
-  - [ ] milestone CRUD
-  - [ ] linked tasks
-  - [ ] owner and due date
-  - [ ] milestone progress
-  - [ ] timeline visualization
-- [ ] Risks modulu
-  - [ ] risk register list
-  - [ ] impact / likelihood scoring
-  - [ ] mitigation plan
-  - [ ] owner / due date
-  - [ ] linked project and tasks
-  - [ ] status workflow
+- [x] Milestones / Timeline modulu
+  - [x] milestone CRUD
+  - [x] linked tasks
+  - [x] owner and due date
+  - [x] milestone progress
+  - [x] timeline visualization
+- [x] Risks modulu
+  - [x] risk register list
+  - [x] impact / likelihood scoring
+  - [x] mitigation plan
+  - [x] owner / due date
+  - [x] linked project and tasks
+  - [x] status workflow
 - [ ] Team capacity module
   - [x] active load by user
   - [x] due-date density
@@ -162,24 +162,24 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
 ## Information Architecture
 
 - [ ] Main nav target
-  - [ ] Dashboard
-  - [ ] Projects
-  - [ ] Tasks
-  - [ ] Timeline
-  - [ ] Risks
-  - [ ] Team
+  - [x] Dashboard
+  - [x] Projects
+  - [x] Tasks
+  - [x] Timeline
+  - [x] Risks
+  - [x] Team
   - [ ] Activity
   - [x] Reports
-  - [ ] Settings
-- [ ] Project nav target
-  - [ ] Overview
-  - [ ] Board
-  - [ ] List
-  - [ ] Timeline
-  - [ ] Files
-  - [ ] Activity
-  - [ ] Risks
-  - [ ] Settings
+  - [x] Settings
+- [x] Project nav target
+  - [x] Overview
+  - [x] Board
+  - [x] List
+  - [x] Timeline
+  - [x] Files
+  - [x] Activity
+  - [x] Risks
+  - [x] Settings
 
 ## Delivery Order
 
