@@ -172,6 +172,15 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
       label: client.name,
     })),
   ];
+  const sortedTasks = [...tasks].sort((left, right) => {
+    const leftTime = left.dueDate ? new Date(left.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+    const rightTime = right.dueDate ? new Date(right.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+    return leftTime - rightTime || right.updatedAt.getTime() - left.updatedAt.getTime();
+  });
+  const taskOptions = sortedTasks.map((task) => ({
+    value: task.id,
+    label: task.title,
+  }));
   const teamLoad = analyzeTeamLoad(
     project.workspace.members.map((member) => ({
       id: member.userId,
@@ -219,10 +228,12 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
       description: milestone.description,
       status: milestone.status,
       dueDate: milestone.dueDate,
+      ownerId: milestone.ownerId,
       ownerName: milestone.owner?.name ?? milestone.owner?.email ?? "Owner tanimsiz",
       taskCount: milestoneTaskCount,
       completedTaskCount,
       progress,
+      taskIds: milestone.tasks.map((task) => task.id),
     };
   });
 
@@ -237,8 +248,10 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
         recommendation: risk.mitigationPlan ?? "Mitigation plani eklenmedi.",
         status: risk.status,
         ownerName: risk.owner?.name ?? risk.owner?.email ?? "Owner tanimsiz",
+        ownerId: risk.ownerId,
         dueDate: risk.dueDate,
         taskTitle: risk.task?.title ?? null,
+        taskId: risk.taskId,
         impact: risk.impact,
         likelihood: risk.likelihood,
       };
@@ -252,8 +265,10 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
           recommendation: "Haftalik status ozetini siklastirin ve onay bekleyen deliverable listesini netlestirin.",
           status: "OPEN",
           ownerName: project.owner?.name ?? project.owner?.email ?? "Owner tanimsiz",
+          ownerId: project.ownerId,
           dueDate: project.dueDate,
           taskTitle: null,
+          taskId: null,
           impact: "CRITICAL",
           likelihood: "HIGH",
         }]
@@ -304,11 +319,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
           }}
           sections={project.sections}
           members={members}
-          tasks={[...tasks].sort((left, right) => {
-            const leftTime = left.dueDate ? new Date(left.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
-            const rightTime = right.dueDate ? new Date(right.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
-            return leftTime - rightTime || right.updatedAt.getTime() - left.updatedAt.getTime();
-          })}
+          tasks={sortedTasks}
           health={analyzedProject.health}
           metrics={{
             openTasks: analyzedProject.openTasks,
@@ -325,6 +336,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
           files={files}
           ownerOptions={ownerOptions}
           clientOptions={clientOptions}
+          taskOptions={taskOptions}
         />
       </div>
     </div>
