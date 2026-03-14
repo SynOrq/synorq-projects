@@ -7,6 +7,7 @@ type WorkspaceStateRecord = {
   activityAlertsEnabled?: boolean;
   weeklyDigestEnabled?: boolean;
   savedProjectsView?: unknown;
+  notificationConsoleState?: unknown;
 };
 
 type WorkspaceStateDelegate = {
@@ -24,6 +25,7 @@ type WorkspaceStateDelegate = {
       activityAlertsEnabled?: true;
       weeklyDigestEnabled?: true;
       savedProjectsView?: true;
+      notificationConsoleState?: true;
     };
   }) => Promise<WorkspaceStateRecord | null>;
   upsert: (args: {
@@ -40,6 +42,7 @@ type WorkspaceStateDelegate = {
       activityAlertsEnabled?: boolean;
       weeklyDigestEnabled?: boolean;
       savedProjectsView?: unknown;
+      notificationConsoleState?: unknown;
     };
     create: {
       workspaceId: string;
@@ -50,6 +53,7 @@ type WorkspaceStateDelegate = {
       activityAlertsEnabled?: boolean;
       weeklyDigestEnabled?: boolean;
       savedProjectsView?: unknown;
+      notificationConsoleState?: unknown;
     };
     select: {
       notificationsReadAt?: true;
@@ -58,6 +62,7 @@ type WorkspaceStateDelegate = {
       activityAlertsEnabled?: true;
       weeklyDigestEnabled?: true;
       savedProjectsView?: true;
+      notificationConsoleState?: true;
     };
   }) => Promise<WorkspaceStateRecord>;
 };
@@ -72,6 +77,7 @@ export async function findWorkspaceState(params: {
   includeOnboarding?: boolean;
   includePreferences?: boolean;
   includeProjectView?: boolean;
+  includeNotificationConsole?: boolean;
 }) {
   const delegate = getWorkspaceStateDelegate();
   if (!delegate) return null;
@@ -94,6 +100,7 @@ export async function findWorkspaceState(params: {
           }
         : {}),
       ...(params.includeProjectView ? { savedProjectsView: true } : {}),
+      ...(params.includeNotificationConsole ? { notificationConsoleState: true } : {}),
     },
   });
 }
@@ -108,6 +115,7 @@ export async function upsertWorkspaceState(params: {
     activityAlertsEnabled?: boolean;
     weeklyDigestEnabled?: boolean;
     savedProjectsView?: unknown;
+    notificationConsoleState?: unknown;
   };
 }) {
   const delegate = getWorkspaceStateDelegate();
@@ -133,6 +141,7 @@ export async function upsertWorkspaceState(params: {
       activityAlertsEnabled: true,
       weeklyDigestEnabled: true,
       savedProjectsView: true,
+      notificationConsoleState: true,
     },
   });
 }

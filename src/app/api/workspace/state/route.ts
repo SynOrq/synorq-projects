@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { normalizeNotificationConsoleState } from "@/lib/notifications";
 import { normalizeSavedProjectsView } from "@/lib/projects-saved-view";
 import { upsertWorkspaceState } from "@/lib/workspace-state";
 
@@ -30,6 +31,7 @@ export async function PATCH(req: NextRequest) {
       activityAlertsEnabled?: boolean;
       weeklyDigestEnabled?: boolean;
       savedProjectsView?: unknown;
+      notificationConsoleState?: unknown;
     } = {};
 
     if (body.markNotificationsRead) {
@@ -67,6 +69,11 @@ export async function PATCH(req: NextRequest) {
 
       updates.savedProjectsView = result.data;
       preferenceKeys.push("savedProjectsView");
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, "notificationConsoleState")) {
+      updates.notificationConsoleState = normalizeNotificationConsoleState(body.notificationConsoleState);
+      preferenceKeys.push("notificationConsoleState");
     }
 
     if (Object.keys(updates).length === 0) {

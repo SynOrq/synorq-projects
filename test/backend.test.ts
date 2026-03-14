@@ -9,3 +9,4 @@ import "./projects-saved-view.test.ts";
 import "./dashboard.test.ts";
 import "./projects-portfolio.test.ts";
 import "./audit.test.ts";
+import "./notifications.test.ts";

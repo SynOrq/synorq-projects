@@ -358,6 +358,7 @@ model WorkspaceUserState {
   activityAlertsEnabled Boolean  @default(true)
   weeklyDigestEnabled  Boolean   @default(false)
   savedProjectsView    Json?
+  notificationConsoleState Json?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 

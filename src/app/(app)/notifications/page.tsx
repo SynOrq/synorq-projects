@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { normalizeNotificationConsoleState } from "@/lib/notifications";
 import { findWorkspaceState } from "@/lib/workspace-state";
 import {
   getActivityCategory,
@@ -32,6 +33,7 @@ export default async function NotificationsPage() {
       workspaceId: workspace.id,
       userId,
       includePreferences: true,
+      includeNotificationConsole: true,
     }),
     db.task.findMany({
       where: {
@@ -61,6 +63,7 @@ export default async function NotificationsPage() {
   const activityAlertsEnabled = workspaceState?.activityAlertsEnabled ?? true;
   const weeklyDigestEnabled = workspaceState?.weeklyDigestEnabled ?? false;
   const notificationsReadAt = workspaceState?.notificationsReadAt ?? null;
+  const notificationConsoleState = normalizeNotificationConsoleState(workspaceState?.notificationConsoleState);
 
   const overdueItems = (riskAlertsEnabled
     ? overdueTasks.filter((task) => task.dueDate && new Date(task.dueDate) < now)
@@ -128,6 +131,7 @@ export default async function NotificationsPage() {
       weeklyDigestEnabled={weeklyDigestEnabled}
       items={[...overdueItems, ...activityItems]}
       digest={digest}
+      initialConsoleState={notificationConsoleState}
     />
   );
 }

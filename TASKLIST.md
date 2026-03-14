@@ -50,11 +50,11 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Activity tab
   - [x] Digest tab
   - [x] filters: mine / risk / project updates / mention
-  - [ ] bulk actions
+  - [x] bulk actions
   - [x] read-unread state
-  - [ ] archive
-  - [ ] snooze
-  - [ ] notification rule controls
+  - [x] archive
+  - [x] snooze
+  - [x] notification rule controls
 - [ ] Projects portfolio ikinci iterasyon
   - [x] owner/client/type alanlari gosterilecek
   - [x] saved views kalici hale getirilecek
