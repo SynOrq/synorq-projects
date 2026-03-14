@@ -7,6 +7,8 @@ type ActivityItem = {
   createdAt: Date;
 };
 
+export type ExecutiveReport = ReturnType<typeof buildExecutiveReport>;
+
 function startOfDay(date: Date) {
   const value = new Date(date);
   value.setHours(0, 0, 0, 0);
@@ -122,5 +124,74 @@ export function buildExecutiveReport(
     overloadedMembers,
     watchMembers,
     projectSpotlights,
+  };
+}
+
+export function buildShareableReportSummary(report: ExecutiveReport) {
+  const healthTone =
+    report.summary.riskProjects > 0
+      ? "attention"
+      : report.summary.watchedProjects > 0 || report.summary.watchMembers > 0
+        ? "watch"
+        : "stable";
+
+  const headline =
+    healthTone === "attention"
+      ? "Delivery ritmi yakin takibe ihtiyac duyuyor."
+      : healthTone === "watch"
+        ? "Portfoy genel olarak stabil, ancak takip gereken sinyaller var."
+        : "Portfoy ritmi stabil ve teslim gorunurlugu kontrol altinda.";
+
+  const highlights = [
+    `${report.summary.riskProjects} riskte proje, ${report.summary.criticalRisks} kritik risk kaydi.`,
+    `${report.summary.deliveriesThisWeek} proje bu hafta teslim bandinda, ${report.summary.dueThisWeekTasks} gorev kapanis bekliyor.`,
+    `7 gunde ${report.summary.completedLast7Days} gorev tamamlandi, ekip kapasite kullanimı %${report.summary.utilization}.`,
+  ];
+
+  const priorities = [
+    report.projectSpotlights.highestRisk
+      ? {
+          label: "En kritik proje",
+          title: report.projectSpotlights.highestRisk.name,
+          detail: `${report.projectSpotlights.highestRisk.criticalRisks} kritik risk • ${report.projectSpotlights.highestRisk.overdueTasks} overdue task`,
+        }
+      : null,
+    report.projectSpotlights.nearestDeadline
+      ? {
+          label: "En yakin teslim",
+          title: report.projectSpotlights.nearestDeadline.name,
+          detail: report.projectSpotlights.nearestDeadline.dueDateResolved
+            ? `${report.projectSpotlights.nearestDeadline.dueDateResolved.toISOString().slice(0, 10)} teslim tarihi`
+            : "Teslim tarihi planlanmadi",
+        }
+      : null,
+    report.overloadedMembers[0]
+      ? {
+          label: "Kapasite baskisi",
+          title: report.overloadedMembers[0].name,
+          detail: `%${report.overloadedMembers[0].utilization} utilization • ${report.overloadedMembers[0].activeTasks} aktif task`,
+        }
+      : null,
+  ].filter(Boolean) as Array<{ label: string; title: string; detail: string }>;
+
+  const riskDigest = report.riskProjects.slice(0, 3).map((project) => ({
+    id: project.id,
+    title: project.name,
+    detail: `${project.client?.name ?? "Internal"} • ${project.criticalRisks} kritik risk • ${project.openMilestones} acik milestone`,
+  }));
+
+  const workloadDigest = [...report.overloadedMembers, ...report.watchMembers].slice(0, 3).map((member) => ({
+    id: member.id,
+    title: member.name,
+    detail: `%${member.utilization} utilization • ${member.activeTasks} aktif task • ${member.overdueTasks} overdue`,
+  }));
+
+  return {
+    headline,
+    healthTone,
+    highlights,
+    priorities,
+    riskDigest,
+    workloadDigest,
   };
 }

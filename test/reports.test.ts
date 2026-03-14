@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildExecutiveReport } from "../src/lib/reports.ts";
+import { buildExecutiveReport, buildShareableReportSummary } from "../src/lib/reports.ts";
 
 const now = new Date("2026-03-14T10:00:00.000Z");
 
@@ -166,4 +166,79 @@ test("buildExecutiveReport aggregates portfolio, risk and capacity metrics", () 
   assert.equal(report.summary.overloadedMembers, 1);
   assert.equal(report.clientHealth.AT_RISK, 1);
   assert.equal(report.projectSpotlights.highestRisk?.name, "Helio");
+});
+
+test("buildShareableReportSummary creates concise leadership digest blocks", () => {
+  const report = buildExecutiveReport(
+    [
+      {
+        id: "project_1",
+        name: "Helio",
+        description: null,
+        color: "#ea580c",
+        status: "ACTIVE",
+        type: "RETAINER",
+        priority: "URGENT",
+        tags: [],
+        startDate: null,
+        dueDate: new Date("2026-03-15T00:00:00.000Z"),
+        createdAt: new Date("2026-03-02T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-13T00:00:00.000Z"),
+        owner: { id: "user_2", name: "Elif", email: "elif@synorq.com" },
+        client: { id: "client_2", name: "Helio", health: "AT_RISK" },
+        tasks: [],
+        milestones: [],
+        risks: [],
+        totalTasks: 3,
+        completedTasks: 1,
+        openTasks: 2,
+        overdueTasks: 2,
+        dueThisWeekTasks: 2,
+        unassignedTasks: 0,
+        completionRate: 33,
+        activeAssignees: 1,
+        health: { key: "risk", label: "Riskli", tone: "", score: 42 },
+        dueDateResolved: new Date("2026-03-15T00:00:00.000Z"),
+        dueInDays: 1,
+        lastActivityAt: new Date("2026-03-13T00:00:00.000Z"),
+        openMilestones: 2,
+        completedMilestones: 0,
+        milestoneCompletionRate: 40,
+        nextMilestone: null,
+        openRisks: 3,
+        criticalRisks: 2,
+      },
+    ],
+    [
+      {
+        id: "user_2",
+        name: "Elif",
+        email: "elif@synorq.com",
+        image: null,
+        role: "MEMBER",
+        weeklyCapacityHours: 34,
+        projectedHours: 31,
+        loggedHours: 8,
+        availableHours: 3,
+        utilization: 91,
+        activeTasks: 4,
+        overdueTasks: 1,
+        dueThisWeekTasks: 3,
+        blockedTasks: 1,
+        completedLast7Days: 1,
+        loadState: "overloaded",
+        upcomingTasks: [],
+      },
+    ],
+    [{ id: "activity_1", action: "risk.created", createdAt: new Date("2026-03-12T00:00:00.000Z") }],
+    now
+  );
+
+  const summary = buildShareableReportSummary(report);
+
+  assert.equal(summary.healthTone, "attention");
+  assert.equal(summary.priorities.length, 3);
+  assert.equal(summary.riskDigest[0]?.title, "Helio");
+  assert.match(summary.highlights[0] ?? "", /kritik risk/i);
+  assert.match(summary.workloadDigest[0]?.detail ?? "", /utilization/i);
 });

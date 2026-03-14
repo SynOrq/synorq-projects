@@ -1,11 +1,13 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle, BarChart3, CalendarRange, CheckCircle2, Clock3, Gauge, TrendingUp, Users } from "lucide-react";
+import { AlertTriangle, ArrowRight, BarChart3, CalendarRange, CheckCircle2, Clock3, Gauge, Share2, TrendingUp, Users } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { analyzeProjects, type PortfolioProject } from "@/lib/portfolio";
 import { analyzeTeamCapacity } from "@/lib/team-capacity";
 import { buildExecutiveReport } from "@/lib/reports";
 import { formatDate, formatDateTime, formatRelative } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 function statusLabel(status: string) {
@@ -180,6 +182,20 @@ export default async function ReportsPage() {
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
                 {workspace.name} icin portfoy sagligi, kritik teslimler, ekip kapasitesi ve client risk yogunlugu tek rapor yüzeyinde toplanir.
               </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Button asChild size="sm">
+                  <Link href="/reports/share">
+                    <Share2 size={13} />
+                    Share view
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/projects?health=risk">
+                    Riskte projeler
+                    <ArrowRight size={13} />
+                  </Link>
+                </Button>
+              </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">

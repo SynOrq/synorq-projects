@@ -128,7 +128,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] portfolio risk report
   - [x] team workload report
   - [x] delivery performance report
-  - [ ] shareable summary view
+  - [x] shareable summary view
 - [ ] Smart onboarding flow
   - [x] guided checklist
   - [ ] demo workspace state

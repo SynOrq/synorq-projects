@@ -61,6 +61,14 @@ export function buildCommandItems(params: {
       keywords: ["reports", "weekly", "executive", "summary"],
     },
     {
+      id: "nav-reports-share",
+      title: "Shareable report summary",
+      subtitle: "Clean executive summary for screenshots and sharing",
+      href: "/reports/share",
+      group: "Navigate",
+      keywords: ["reports", "share", "summary", "executive", "client"],
+    },
+    {
       id: "nav-team",
       title: "Team capacity",
       subtitle: "Load, heatmap and member access",
