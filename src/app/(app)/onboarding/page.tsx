@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, CheckCircle2, FolderKanban, Rocket, Settings, Users, WandSparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, FolderKanban, Gauge, Rocket, Settings, Users, WandSparkles } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { buildOnboardingChecklist } from "@/lib/onboarding";
+import { buildDemoWorkspaceState, buildOnboardingChecklist } from "@/lib/onboarding";
+import { analyzeProjects, type PortfolioProject } from "@/lib/portfolio";
 import { findWorkspaceState } from "@/lib/workspace-state";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export default async function OnboardingPage() {
   const session = await auth();
@@ -21,7 +23,7 @@ export default async function OnboardingPage() {
 
   if (!workspace) redirect("/auth/login");
 
-  const [taskCount, workspaceState] = await Promise.all([
+  const [taskCount, workspaceState, activityCount, projectsRaw] = await Promise.all([
     db.task.count({
       where: {
         project: { workspaceId: workspace.id },
@@ -33,7 +35,66 @@ export default async function OnboardingPage() {
       includeOnboarding: true,
       includePreferences: true,
     }),
+    db.activityLog.count({
+      where: { workspaceId: workspace.id },
+    }),
+    db.project.findMany({
+      where: { workspaceId: workspace.id, status: { not: "ARCHIVED" } },
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+        client: { select: { id: true, name: true, health: true } },
+        tasks: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            dueDate: true,
+            completedAt: true,
+            assigneeId: true,
+            createdAt: true,
+            updatedAt: true,
+            priority: true,
+          },
+        },
+        milestones: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            dueDate: true,
+            tasks: { select: { id: true, status: true } },
+          },
+        },
+        risks: {
+          select: {
+            id: true,
+            status: true,
+            impact: true,
+            likelihood: true,
+            dueDate: true,
+          },
+        },
+      },
+      orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+    }),
   ]);
+
+  const analyzedProjects = analyzeProjects(projectsRaw as PortfolioProject[]);
+  const demoState = buildDemoWorkspaceState({
+    workspaceName: workspace.name,
+    projectCount: workspace._count.projects,
+    memberCount: workspace._count.members,
+    taskCount,
+    activityCount,
+    riskProjectCount: analyzedProjects.filter((project) => project.health.key === "risk").length,
+    overdueTaskCount: analyzedProjects.reduce((sum, project) => sum + project.overdueTasks, 0),
+    openRiskCount: analyzedProjects.reduce((sum, project) => sum + project.openRisks, 0),
+    criticalMilestoneCount: analyzedProjects.reduce(
+      (sum, project) => sum + (project.milestones ?? []).filter((milestone) => milestone.status === "AT_RISK").length,
+      0
+    ),
+    weeklyDigestEnabled: workspaceState?.weeklyDigestEnabled ?? false,
+  });
 
   const onboarding = buildOnboardingChecklist({
     hasProfileIdentity: Boolean(session.user.name) && Boolean(session.user.image),
@@ -157,6 +218,34 @@ export default async function OnboardingPage() {
 
         <div className="space-y-6">
           <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+                  <Eye size={18} className="text-indigo-600" />
+                  Demo workspace state
+                </div>
+                <p className="mt-2 text-sm leading-7 text-slate-600">{demoState.description}</p>
+              </div>
+              <Badge variant={demoState.tone === "thin" ? "warning" : demoState.tone === "active" ? "success" : "secondary"}>
+                {demoState.tone === "thin" ? "Thin shell" : demoState.tone === "active" ? "Demo ready" : "Stable"}
+              </Badge>
+            </div>
+
+            <div className="mt-5 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="text-sm font-black text-slate-950">{demoState.headline}</div>
+              <div className="mt-2 text-sm text-slate-600">
+                Demo etkisi icin hedef: en az 3 proje, 10+ task, 6+ activity ve gozle gorulur risk/ritim sinyali.
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {demoState.metrics.map((metric) => (
+                <ReadinessCard key={metric.label} label={metric.label} value={metric.value} note={metric.note} />
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
             <div className="text-lg font-black text-slate-950">Starter actions</div>
             <div className="mt-5 grid gap-3">
               {starterActions.map((action) => {
@@ -183,12 +272,37 @@ export default async function OnboardingPage() {
           </section>
 
           <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+              <Gauge size={18} className="text-emerald-600" />
+              Recommended exploration paths
+            </div>
+            <div className="mt-5 grid gap-3">
+              {demoState.explorationPaths.map((path) => (
+                <Link
+                  key={path.label}
+                  href={path.href}
+                  className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-indigo-200 hover:bg-white"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-black text-slate-950">{path.label}</div>
+                      <div className="mt-1 text-sm text-slate-600">{path.description}</div>
+                    </div>
+                    <ArrowRight size={16} className="flex-shrink-0 text-slate-400" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
             <div className="text-lg font-black text-slate-950">Workspace readiness</div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <ReadinessCard label="Logo" value={workspace.logoUrl ? "Hazir" : "Eksik"} note="Workspace branding" />
               <ReadinessCard label="Projects" value={String(workspace._count.projects)} note="aktif proje kaydi" />
               <ReadinessCard label="Members" value={String(workspace._count.members)} note="workspace seat" />
               <ReadinessCard label="Tasks" value={String(taskCount)} note="execution backlog" />
+              <ReadinessCard label="Activity" value={String(activityCount)} note="audit + collaboration" />
               <ReadinessCard label="Digest" value={workspaceState?.weeklyDigestEnabled ? "Acik" : "Kapali"} note="weekly summary posture" />
               <ReadinessCard label="Checklist" value={`%${onboarding.progress}`} note="setup completion" />
             </div>

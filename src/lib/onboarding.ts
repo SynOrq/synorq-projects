@@ -7,6 +7,18 @@ export type OnboardingChecklistItem = {
   cta: string;
 };
 
+export type DemoWorkspaceMetric = {
+  label: string;
+  value: string;
+  note: string;
+};
+
+export type DemoWorkspacePath = {
+  label: string;
+  description: string;
+  href: string;
+};
+
 export function buildOnboardingChecklist(params: {
   hasProfileIdentity: boolean;
   hasWorkspace: boolean;
@@ -76,5 +88,103 @@ export function buildOnboardingChecklist(params: {
     total: items.length,
     progress: items.length === 0 ? 0 : Math.round((completed / items.length) * 100),
     nextItem: items.find((item) => !item.done) ?? null,
+  };
+}
+
+export function buildDemoWorkspaceState(params: {
+  workspaceName: string;
+  projectCount: number;
+  memberCount: number;
+  taskCount: number;
+  activityCount: number;
+  riskProjectCount: number;
+  overdueTaskCount: number;
+  openRiskCount: number;
+  criticalMilestoneCount: number;
+  weeklyDigestEnabled: boolean;
+}) {
+  const hasDemoDensity =
+    params.projectCount >= 3 && params.taskCount >= 10 && params.activityCount >= 6 && params.memberCount >= 3;
+
+  const tone =
+    !hasDemoDensity
+      ? "thin"
+      : params.riskProjectCount > 0 || params.overdueTaskCount > 0 || params.openRiskCount > 0
+        ? "active"
+        : "stable";
+
+  const headline =
+    tone === "thin"
+      ? `${params.workspaceName} halen ince bir shell gorunumu veriyor.`
+      : tone === "active"
+        ? `${params.workspaceName} demo workspace'i artik operasyon sinyallerini gosterebiliyor.`
+        : `${params.workspaceName} workspace'i stabil bir demo ritmine sahip.`;
+
+  const description =
+    tone === "thin"
+      ? "Daha guclu demo etkisi icin proje, gorev, activity ve risk yogunlugu artirilmali."
+      : "Dashboard, projects, reports ve team capacity yuzeylerini acarken artik kanitlayici veri katmani hazir.";
+
+  const metrics: DemoWorkspaceMetric[] = [
+    {
+      label: "Projects",
+      value: String(params.projectCount),
+      note: params.riskProjectCount > 0 ? `${params.riskProjectCount} risk bandinda` : "delivery portfolio",
+    },
+    {
+      label: "Tasks",
+      value: String(params.taskCount),
+      note: params.overdueTaskCount > 0 ? `${params.overdueTaskCount} overdue task` : "execution backlog",
+    },
+    {
+      label: "Activity",
+      value: String(params.activityCount),
+      note: "audit + collaboration stream",
+    },
+    {
+      label: "Signals",
+      value: String(params.openRiskCount + params.criticalMilestoneCount),
+      note: `${params.openRiskCount} open risk • ${params.criticalMilestoneCount} at-risk milestone`,
+    },
+  ];
+
+  const explorationPaths: DemoWorkspacePath[] = [
+    {
+      label: "Risk portfolio view",
+      description: "Table view icinde riskteki projeleri ve teslim baskisini tara.",
+      href: "/projects?health=risk&view=table",
+    },
+    {
+      label: "Shareable report",
+      description: "Yonetime veya client review'a gidecek sade executive summary'i ac.",
+      href: "/reports/share",
+    },
+    {
+      label: "Team capacity",
+      description: "Kapasite baskisi, due-date density ve workload heatmap'i incele.",
+      href: "/members",
+    },
+    {
+      label: "Execution inbox",
+      description: "Gecikenler, review queue ve blocked isleri kisisel akis icinde gor.",
+      href: "/my-tasks?segment=overdue",
+    },
+  ];
+
+  if (!params.weeklyDigestEnabled) {
+    explorationPaths.unshift({
+      label: "Digest posture ac",
+      description: "Weekly summary posture'u tamamlayip reports katmanini kapat.",
+      href: "/settings",
+    });
+  }
+
+  return {
+    tone,
+    headline,
+    description,
+    hasDemoDensity,
+    metrics,
+    explorationPaths: explorationPaths.slice(0, 4),
   };
 }

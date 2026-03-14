@@ -131,7 +131,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] shareable summary view
 - [ ] Smart onboarding flow
   - [x] guided checklist
-  - [ ] demo workspace state
+  - [x] demo workspace state
   - [x] create-first-project flow
   - [x] add-team-member flow
   - [ ] save-first-view flow
