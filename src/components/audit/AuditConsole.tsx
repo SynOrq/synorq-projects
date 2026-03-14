@@ -77,8 +77,23 @@ export default function AuditConsole({ workspaceName, items, summary }: AuditCon
     return filterAuditItems(items, { scope, severity, actor, range, query } satisfies AuditFilterState);
   }, [actor, items, query, range, scope, severity]);
 
-  function downloadExport(format: "csv" | "json") {
+  async function downloadExport(format: "csv" | "json") {
     const rows = buildAuditExportRows(filteredItems);
+    try {
+      await fetch("/api/audit/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          format,
+          rowCount: rows.length,
+          scope,
+          severity,
+          range,
+        }),
+      });
+    } catch {
+      // Export should still complete if telemetry logging fails.
+    }
     const payload =
       format === "csv"
         ? serializeAuditRowsToCsv(rows)

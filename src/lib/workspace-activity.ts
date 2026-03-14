@@ -1,26 +1,18 @@
-export type ActivityCategory = "workspace" | "team" | "project" | "task" | "file";
-export type ActivitySeverity = "info" | "warning" | "critical";
-
-export type ActivityMetadata = {
-  taskId?: string;
-  projectId?: string;
-  attachmentId?: string;
-  commentId?: string;
-  field?: string;
-  name?: string;
-  title?: string;
-  status?: string;
-  role?: string;
-  roleFrom?: string | null;
-  roleTo?: string | null;
-  fromSectionName?: string | null;
-  toSectionName?: string | null;
+type ActivityCategory = "workspace" | "team" | "project" | "task" | "file";
+type ActivitySeverity = "info" | "warning" | "critical";
+type ActivityMetadata = {
   targetUserId?: string | null;
   targetUserEmail?: string | null;
   targetUserName?: string | null;
   invitedEmail?: string | null;
   clientName?: string | null;
   preferenceKeys?: string[];
+  title?: string;
+  name?: string;
+  role?: string;
+  roleTo?: string | null;
+  fromSectionName?: string | null;
+  toSectionName?: string | null;
   changes?: Array<{
     field: string;
     label: string;
@@ -34,25 +26,22 @@ function readMetadata(value: unknown): ActivityMetadata {
   return value as ActivityMetadata;
 }
 
-export function getActivityCategory(action: string): ActivityCategory {
+function getActivityCategory(action: string): ActivityCategory {
   if (action.startsWith("workspace.member")) return "team";
   if (action.startsWith("workspace.")) return "workspace";
-  if (action === "export.created") return "workspace";
-  if (action.startsWith("milestone.") || action.startsWith("risk.")) return "project";
-  if (action.startsWith("project.")) return "project";
+  if (action.startsWith("milestone.") || action.startsWith("risk.") || action.startsWith("project.")) return "project";
   if (action.startsWith("task.attachment")) return "file";
   return "task";
 }
 
-export function getActivitySeverity(action: string, metadataValue: unknown): ActivitySeverity {
+function getActivitySeverity(action: string, metadataValue: unknown): ActivitySeverity {
   const metadata = readMetadata(metadataValue);
 
   if (action === "task.due_date_changed") {
     const due = metadata?.changes?.find((change) => change.field === "dueDate")?.to ?? null;
     if (due) {
       const dueDate = new Date(due);
-      const now = new Date();
-      if (!Number.isNaN(dueDate.getTime()) && dueDate < now) return "critical";
+      if (!Number.isNaN(dueDate.getTime()) && dueDate < new Date()) return "critical";
     }
     return "warning";
   }
@@ -61,19 +50,15 @@ export function getActivitySeverity(action: string, metadataValue: unknown): Act
   if (action === "risk.created" || action === "risk.updated" || action === "milestone.created" || action === "milestone.updated") {
     return "warning";
   }
-  if (action === "workspace.preference_changed") return "info";
-  if (action === "export.created") return "info";
-  if (action === "task.moved" || action === "task.updated" || action === "project.created") return "info";
   if (action === "task.deleted") return "critical";
   return "info";
 }
 
-export function getActivityTitle(action: string) {
+function getActivityTitle(action: string) {
   const labelMap: Record<string, string> = {
     "project.created": "Yeni proje olusturuldu",
     "workspace.updated": "Workspace ayarlari guncellendi",
     "workspace.preference_changed": "Bildirim tercihleri guncellendi",
-    "export.created": "Export olusturuldu",
     "workspace.member.invited": "Yeni ekip uyesi davet edildi",
     "workspace.member.role_updated": "Rol yetkisi guncellendi",
     "task.created": "Yeni gorev olusturuldu",
@@ -97,7 +82,7 @@ export function getActivityTitle(action: string) {
   return labelMap[action] ?? action;
 }
 
-export function getActivityDetail(params: {
+function getActivityDetail(params: {
   action: string;
   metadata: unknown;
   actorName: string;
@@ -113,8 +98,6 @@ export function getActivityDetail(params: {
       return `${params.actorName} workspace kimligini guncelledi.`;
     case "workspace.preference_changed":
       return `${params.actorName} bildirim tercihlerini guncelledi${metadata?.preferenceKeys?.length ? ` • ${metadata.preferenceKeys.join(", ")}` : ""}.`;
-    case "export.created":
-      return `${params.actorName} filtrelenmis timeline verisini disa aktardi.`;
     case "workspace.member.invited":
       return `${params.actorName} ${targetName} kisini ekibe davet etti.`;
     case "workspace.member.role_updated":
@@ -127,7 +110,7 @@ export function getActivityDetail(params: {
     }
     case "task.due_date_changed": {
       const dueChange = metadata?.changes?.find((change) => change.field === "dueDate");
-      return `${params.actorName} teslim tarihini ${dueChange?.from ?? "-"} -> ${dueChange?.to ?? "-" } olarak degistirdi.`;
+      return `${params.actorName} teslim tarihini ${dueChange?.from ?? "-"} -> ${dueChange?.to ?? "-"} olarak degistirdi.`;
     }
     case "task.updated":
       return metadata?.changes?.length
@@ -156,18 +139,115 @@ export function getActivityDetail(params: {
   }
 }
 
-export function isMentionForUser(metadataValue: unknown, userId: string) {
+function isMentionForUser(metadataValue: unknown, userId: string) {
   const metadata = readMetadata(metadataValue);
   return metadata?.targetUserId === userId;
 }
 
-export function isProjectUpdate(action: string) {
-  return action.startsWith("project.") || action.startsWith("task.");
+export type WorkspaceActivityInput = {
+  id: string;
+  action: string;
+  metadata: ActivityMetadata | unknown;
+  actorId: string;
+  actorName: string;
+  projectId: string | null;
+  projectName: string | null;
+  createdAt: Date;
+};
+
+export type WorkspaceActivityItem = {
+  id: string;
+  action: string;
+  title: string;
+  detail: string;
+  category: ReturnType<typeof getActivityCategory>;
+  severity: ReturnType<typeof getActivitySeverity>;
+  actorId: string;
+  actorName: string;
+  projectId: string | null;
+  projectName: string | null;
+  createdAt: Date;
+  href: string;
+  isMention: boolean;
+  isMine: boolean;
+};
+
+export type ActivitySegment = "all" | "mine" | "mentions" | "delivery" | "team" | "critical";
+
+export function buildWorkspaceActivityFeed(entries: WorkspaceActivityInput[], userId: string) {
+  const items: WorkspaceActivityItem[] = entries.map((entry) => {
+    const category = getActivityCategory(entry.action);
+    const severity = getActivitySeverity(entry.action, entry.metadata);
+    const isMention = isMentionForUser(entry.metadata, userId);
+
+    return {
+      id: entry.id,
+      action: entry.action,
+      title: getActivityTitle(entry.action),
+      detail: getActivityDetail({
+        action: entry.action,
+        metadata: entry.metadata,
+        actorName: entry.actorName,
+        projectName: entry.projectName,
+      }),
+      category,
+      severity,
+      actorId: entry.actorId,
+      actorName: entry.actorName,
+      projectId: entry.projectId,
+      projectName: entry.projectName,
+      createdAt: entry.createdAt,
+      href: entry.projectId ? `/projects/${entry.projectId}?tab=activity` : "/audit",
+      isMention,
+      isMine: entry.actorId === userId,
+    };
+  });
+
+  return {
+    items,
+    summary: {
+      total: items.length,
+      mine: items.filter((item) => item.isMine).length,
+      mentions: items.filter((item) => item.isMention).length,
+      critical: items.filter((item) => item.severity === "critical").length,
+      delivery: items.filter((item) => item.category === "project" || item.category === "task" || item.category === "file").length,
+      team: items.filter((item) => item.category === "team").length,
+    },
+  };
 }
 
-export function shouldSurfaceAsActionRequired(action: string, metadataValue: unknown, userId: string) {
-  const severity = getActivitySeverity(action, metadataValue);
-  if (severity === "critical") return true;
-  if (isMentionForUser(metadataValue, userId)) return true;
-  return action === "task.due_date_changed" || action === "task.assignee_changed" || action === "risk.created";
+export function filterWorkspaceActivity(items: WorkspaceActivityItem[], segment: ActivitySegment, query: string) {
+  const normalized = query.trim().toLowerCase();
+
+  return items.filter((item) => {
+    const segmentMatch =
+      segment === "all"
+        ? true
+        : segment === "mine"
+          ? item.isMine
+          : segment === "mentions"
+            ? item.isMention
+            : segment === "delivery"
+              ? item.category === "project" || item.category === "task" || item.category === "file"
+              : segment === "team"
+                ? item.category === "team" || item.category === "workspace"
+                : item.severity === "critical";
+
+    if (!segmentMatch) return false;
+    if (!normalized) return true;
+
+    const haystack = [
+      item.title,
+      item.detail,
+      item.actorName,
+      item.projectName ?? "",
+      item.category,
+      item.action,
+      item.severity,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return haystack.includes(normalized);
+  });
 }

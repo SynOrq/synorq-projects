@@ -21,15 +21,15 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
 - [x] Risk register veri modeli eklenecek
 - [ ] Team capacity/workload veri modeli eklenecek
 - [ ] Audit event taxonomy genisletilecek
-  - [ ] project.created
-  - [ ] project.updated
-  - [ ] task.deleted
-  - [ ] task.assignee_changed
-  - [ ] task.due_date_changed
+  - [x] project.created
+  - [x] project.updated
+  - [x] task.deleted
+  - [x] task.assignee_changed
+  - [x] task.due_date_changed
   - [x] risk.created / updated
   - [x] milestone.created / updated
-  - [ ] workspace.preference_changed
-  - [ ] export.created
+  - [x] workspace.preference_changed
+  - [x] export.created
 - [ ] Ortak analytics helpers genisletilecek
   - [ ] portfolio health
   - [ ] team workload
@@ -168,7 +168,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Timeline
   - [x] Risks
   - [x] Team
-  - [ ] Activity
+  - [x] Activity
   - [x] Reports
   - [x] Settings
 - [x] Project nav target

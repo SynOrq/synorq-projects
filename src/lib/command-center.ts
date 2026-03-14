@@ -78,6 +78,14 @@ export function buildCommandItems(params: {
       keywords: ["risks", "risk register", "escalation", "mitigation"],
     },
     {
+      id: "nav-activity",
+      title: "Activity",
+      subtitle: "Workspace activity timeline and recent changes",
+      href: "/activity",
+      group: "Navigate",
+      keywords: ["activity", "timeline", "events", "recent changes"],
+    },
+    {
       id: "nav-reports",
       title: "Reports",
       subtitle: "Executive summary and weekly report",

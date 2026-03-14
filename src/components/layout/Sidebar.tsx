@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   BellRing,
   ChartColumnIncreasing,
   CalendarRange,
@@ -10,7 +11,6 @@ import {
   FolderKanban,
   CheckSquare,
   ShieldAlert,
-  ShieldCheck,
   Users,
   Settings,
   ChevronDown,
@@ -33,7 +33,7 @@ const navItems = [
   { href: "/my-tasks",   icon: CheckSquare,     label: "Görevlerim" },
   { href: "/timeline",   icon: CalendarRange,   label: "Timeline" },
   { href: "/risks",      icon: ShieldAlert,     label: "Riskler" },
-  { href: "/audit",      icon: ShieldCheck,     label: "Audit Log" },
+  { href: "/activity",   icon: Activity,        label: "Activity" },
   { href: "/members",    icon: Users,           label: "Ekip" },
   { href: "/reports",    icon: ChartColumnIncreasing, label: "Raporlar" },
   { href: "/settings",   icon: Settings,        label: "Ayarlar" },

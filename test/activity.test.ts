@@ -10,6 +10,7 @@ import {
 test("activity category resolves workspace team and file actions", () => {
   assert.equal(getActivityCategory("workspace.member.invited"), "team");
   assert.equal(getActivityCategory("workspace.updated"), "workspace");
+  assert.equal(getActivityCategory("export.created"), "workspace");
   assert.equal(getActivityCategory("risk.created"), "project");
   assert.equal(getActivityCategory("task.attachment.created"), "file");
   assert.equal(getActivityCategory("task.updated"), "task");
@@ -24,6 +25,7 @@ test("activity severity escalates critical task changes", () => {
   );
   assert.equal(getActivitySeverity("task.deleted", null), "critical");
   assert.equal(getActivitySeverity("workspace.preference_changed", null), "info");
+  assert.equal(getActivitySeverity("export.created", null), "info");
 });
 
 test("action required picks up mentions and critical events", () => {
@@ -47,4 +49,15 @@ test("activity detail renders update context", () => {
   });
 
   assert.match(detail, /Oncelik: MEDIUM -> HIGH/);
+});
+
+test("activity detail renders export action", () => {
+  const detail = getActivityDetail({
+    action: "export.created",
+    metadata: null,
+    actorName: "Tarik",
+    projectName: null,
+  });
+
+  assert.match(detail, /disa aktardi/);
 });
