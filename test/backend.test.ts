@@ -10,3 +10,4 @@ import "./dashboard.test.ts";
 import "./projects-portfolio.test.ts";
 import "./audit.test.ts";
 import "./notifications.test.ts";
+import "./project-settings.test.ts";

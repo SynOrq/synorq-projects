@@ -97,10 +97,10 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Board
   - [x] List
   - [x] Timeline
-  - [ ] Files
+  - [x] Files
   - [x] Activity
   - [x] Risks
-  - [ ] Settings
+  - [x] Settings
 
 ## Phase 2: P1 Strategic Modules
 

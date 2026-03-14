@@ -13,7 +13,7 @@ type ProjectPageProps = {
   searchParams?: Promise<{ tab?: string }>;
 };
 
-const validTabs = new Set(["overview", "board", "list", "timeline", "activity", "risks"]);
+const validTabs = new Set(["overview", "board", "list", "timeline", "files", "activity", "risks", "settings"]);
 
 const riskLevelWeight = {
   LOW: 1,
@@ -26,7 +26,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
   const { projectId } = await params;
   const query = await searchParams;
   const currentTab = validTabs.has(query?.tab ?? "")
-    ? (query?.tab as "overview" | "board" | "list" | "timeline" | "activity" | "risks")
+    ? (query?.tab as "overview" | "board" | "list" | "timeline" | "files" | "activity" | "risks" | "settings")
     : "overview";
 
   const session = await auth();
@@ -78,8 +78,32 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
       },
       workspace: {
         include: {
+          clients: {
+            orderBy: { name: "asc" },
+            select: { id: true, name: true },
+          },
           members: {
             include: { user: { select: { id: true, name: true, image: true, email: true } } },
+          },
+        },
+      },
+      tasks: {
+        where: {
+          attachments: { some: {} },
+        },
+        select: {
+          id: true,
+          title: true,
+          section: { select: { name: true } },
+          attachments: {
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              name: true,
+              url: true,
+              mimeType: true,
+              createdAt: true,
+            },
           },
         },
       },
@@ -137,6 +161,17 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
   ])[0];
 
   const members = project.workspace.members.map((member) => member.user);
+  const ownerOptions = project.workspace.members.map((member) => ({
+    value: member.userId,
+    label: member.user.name ?? member.user.email,
+  }));
+  const clientOptions = [
+    { value: "", label: "Internal / no client" },
+    ...project.workspace.clients.map((client) => ({
+      value: client.id,
+      label: client.name,
+    })),
+  ];
   const teamLoad = analyzeTeamLoad(
     project.workspace.members.map((member) => ({
       id: member.userId,
@@ -225,6 +260,21 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
       : []),
   ];
 
+  const files = project.tasks
+    .flatMap((task) =>
+      task.attachments.map((attachment) => ({
+        id: attachment.id,
+        name: attachment.name,
+        url: attachment.url,
+        mimeType: attachment.mimeType,
+        createdAt: attachment.createdAt,
+        taskId: task.id,
+        taskTitle: task.title,
+        sectionName: task.section?.name ?? null,
+      }))
+    )
+    .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+
   return (
     <div className="flex h-full flex-col">
       <ProjectHeader
@@ -241,6 +291,14 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
           project={{
             id: project.id,
             name: project.name,
+            description: project.description,
+            color: project.color,
+            status: project.status,
+            type: project.type,
+            priority: project.priority,
+            ownerId: project.ownerId,
+            clientId: project.clientId,
+            tags: project.tags,
             startDate: project.startDate,
             dueDate: analyzedProject.dueDateResolved,
           }}
@@ -264,6 +322,9 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
           teamLoad={teamLoad}
           activity={activity}
           risks={risks}
+          files={files}
+          ownerOptions={ownerOptions}
+          clientOptions={clientOptions}
         />
       </div>
     </div>

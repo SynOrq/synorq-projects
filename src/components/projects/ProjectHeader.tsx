@@ -8,8 +8,10 @@ const tabs = [
   { id: "board", label: "Board" },
   { id: "list", label: "List" },
   { id: "timeline", label: "Timeline" },
+  { id: "files", label: "Files" },
   { id: "activity", label: "Activity" },
   { id: "risks", label: "Risks" },
+  { id: "settings", label: "Settings" },
 ] as const;
 
 type Props = {

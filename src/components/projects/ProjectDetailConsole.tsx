@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { AlertTriangle, CalendarRange, CheckCircle2, Clock3, FolderKanban, History, ShieldAlert, UsersRound } from "lucide-react";
+import { AlertTriangle, CalendarRange, CheckCircle2, Clock3, FileStack, FolderKanban, History, ShieldAlert, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatDateTime, formatRelative } from "@/lib/utils";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "@/types";
 import KanbanBoard from "@/components/projects/KanbanBoard";
 import type { TaskCardData } from "@/lib/task-detail";
+import ProjectSettingsPanel from "@/components/projects/ProjectSettingsPanel";
 
 type Member = {
   id: string;
@@ -69,10 +70,18 @@ type TeamLoadItem = {
 };
 
 type Props = {
-  currentTab: "overview" | "board" | "list" | "timeline" | "activity" | "risks";
+  currentTab: "overview" | "board" | "list" | "timeline" | "files" | "activity" | "risks" | "settings";
   project: {
     id: string;
     name: string;
+    description: string | null;
+    color: string;
+    status: string;
+    type: string;
+    priority: string;
+    ownerId: string | null;
+    clientId: string | null;
+    tags: string[];
     startDate: Date | null;
     dueDate: Date | null;
   };
@@ -96,6 +105,18 @@ type Props = {
   teamLoad: TeamLoadItem[];
   activity: ActivityItem[];
   risks: RiskItem[];
+  files: Array<{
+    id: string;
+    name: string;
+    url: string;
+    mimeType: string | null;
+    createdAt: Date;
+    taskId: string;
+    taskTitle: string;
+    sectionName: string | null;
+  }>;
+  ownerOptions: Array<{ value: string; label: string }>;
+  clientOptions: Array<{ value: string; label: string }>;
 };
 
 function severityBadge(severity: "info" | "warning" | "critical") {
@@ -123,6 +144,9 @@ export default function ProjectDetailConsole({
   teamLoad,
   activity,
   risks,
+  files,
+  ownerOptions,
+  clientOptions,
 }: Props) {
   const blockers = tasks.filter((task) => task.labels.includes("Blocked") || (task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "DONE"));
   const recentDone = tasks.filter((task) => task.status === "DONE").slice(0, 4);
@@ -297,6 +321,88 @@ export default function ProjectDetailConsole({
     );
   }
 
+  if (currentTab === "files") {
+    const taskCountWithFiles = new Set(files.map((file) => file.taskId)).size;
+    const recentFile = files[0] ?? null;
+
+    return (
+      <div className="p-6">
+        <div className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
+          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+              <FileStack size={18} className="text-indigo-600" />
+              Project files
+            </div>
+            <div className="mt-5 space-y-3">
+              {files.length === 0 && (
+                <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                  Bu proje icin eklenmis dosya veya referans bulunmuyor.
+                </div>
+              )}
+              {files.map((file) => (
+                <a
+                  key={file.id}
+                  href={file.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-slate-300 hover:bg-white"
+                >
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div className="text-sm font-black text-slate-950">{file.name}</div>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                        <span className="rounded-full bg-white px-2.5 py-1">{file.taskTitle}</span>
+                        <span className="rounded-full bg-white px-2.5 py-1">{file.sectionName ?? "Section tanimsiz"}</span>
+                        <span className="rounded-full bg-white px-2.5 py-1">{file.mimeType ?? "Link / resource"}</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-500">{formatDateTime(file.createdAt)}</div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="text-lg font-black text-slate-950">File signals</div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl bg-slate-50 px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Total files</div>
+                  <div className="mt-2 text-2xl font-black text-slate-950">{files.length}</div>
+                </div>
+                <div className="rounded-2xl bg-slate-50 px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Tasks with files</div>
+                  <div className="mt-2 text-2xl font-black text-slate-950">{taskCountWithFiles}</div>
+                </div>
+                <div className="rounded-2xl bg-slate-50 px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Latest upload</div>
+                  <div className="mt-2 text-sm font-black text-slate-950">{recentFile ? formatRelative(recentFile.createdAt) : "Kayit yok"}</div>
+                </div>
+                <div className="rounded-2xl bg-slate-50 px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Commentary surface</div>
+                  <div className="mt-2 text-sm font-black text-slate-950">{tasks.filter((task) => task._count.comments > 0).length} task</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[30px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+              <div className="text-sm font-semibold text-white">Files as delivery proof</div>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                Bu yuzey, gorev icine baglanmis asset, dokuman ve dis baglanti kayitlarini delivery intelligence icine ceker.
+              </p>
+              <div className="mt-4 space-y-3 text-sm text-slate-200">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Task-level attachments proje baglaminda tek listede gorunur.</div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Dosyalar ilgili task ve section ile birlikte izlenir.</div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Attachment activity kayitlari audit ve notification yuzeyleriyle ayni event modelini kullanir.</div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   if (currentTab === "activity") {
     return (
       <div className="p-6">
@@ -390,6 +496,14 @@ export default function ProjectDetailConsole({
             </div>
           </section>
         </div>
+      </div>
+    );
+  }
+
+  if (currentTab === "settings") {
+    return (
+      <div className="p-6">
+        <ProjectSettingsPanel project={project} ownerOptions={ownerOptions} clientOptions={clientOptions} />
       </div>
     );
   }
