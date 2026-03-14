@@ -38,6 +38,9 @@ interface AppTopbarProps {
   commandProjects: Array<{ id: string; name: string; color: string }>;
   commandTasks: Array<{ id: string; title: string; href: string; projectName: string; dueLabel?: string | null }>;
   checklist: ChecklistItem[];
+  onboardingHref: string;
+  nextChecklistHref: string;
+  nextChecklistLabel: string;
   showChecklist: boolean;
 }
 
@@ -50,6 +53,9 @@ export default function AppTopbar({
   commandProjects,
   commandTasks,
   checklist,
+  onboardingHref,
+  nextChecklistHref,
+  nextChecklistLabel,
   showChecklist,
 }: AppTopbarProps) {
   const router = useRouter();
@@ -131,6 +137,11 @@ export default function AppTopbar({
                 <span className="mx-1.5 text-slate-300">•</span>
                 <span>{completedChecklist}/{checklist.length} adim tamam</span>
               </div>
+              <Button asChild type="button" size="sm" variant="outline" className="h-7 px-2 text-xs">
+                <Link href={showChecklist ? onboardingHref : nextChecklistHref}>
+                  {showChecklist ? "Setup hub" : nextChecklistLabel}
+                </Link>
+              </Button>
               <Button
                 type="button"
                 size="sm"

@@ -130,10 +130,10 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] delivery performance report
   - [ ] shareable summary view
 - [ ] Smart onboarding flow
-  - [ ] guided checklist
+  - [x] guided checklist
   - [ ] demo workspace state
-  - [ ] create-first-project flow
-  - [ ] add-team-member flow
+  - [x] create-first-project flow
+  - [x] add-team-member flow
   - [ ] save-first-view flow
 - [ ] Global command/search center
   - [x] project search

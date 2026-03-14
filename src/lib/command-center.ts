@@ -93,6 +93,14 @@ export function buildCommandItems(params: {
       keywords: ["settings", "workspace", "profile"],
     },
     {
+      id: "nav-onboarding",
+      title: "Onboarding hub",
+      subtitle: "Guided setup checklist and starter actions",
+      href: "/onboarding",
+      group: "Navigate",
+      keywords: ["onboarding", "setup", "guide", "checklist"],
+    },
+    {
       id: "create-project",
       title: "Create project",
       subtitle: "Open project creation wizard",

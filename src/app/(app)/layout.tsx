@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { buildOnboardingChecklist } from "@/lib/onboarding";
 import { formatRelative } from "@/lib/utils";
 import { findWorkspaceState } from "@/lib/workspace-state";
 import AppTopbar from "@/components/layout/AppTopbar";
@@ -124,14 +125,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ].slice(0, 4);
   const unreadAlertCount = alerts.filter((item) => item.unread).length;
 
-  const checklist = [
-    { label: "Profil kimligi tanimli", done: Boolean(session.user.name) && Boolean(session.user.image) },
-    { label: "Workspace olusturuldu", done: Boolean(workspace) },
-    { label: "Workspace markasi tanimli", done: Boolean(workspace?.logoUrl) },
-    { label: "Ilk proje olusturuldu", done: projects.length > 0 },
-    { label: "Ekip daveti basladi", done: (workspace?._count.members ?? 0) > 1 },
-    { label: "Task akisi basladi", done: taskCount > 0 },
-  ];
+  const onboarding = buildOnboardingChecklist({
+    hasProfileIdentity: Boolean(session.user.name) && Boolean(session.user.image),
+    hasWorkspace: Boolean(workspace),
+    hasWorkspaceBrand: Boolean(workspace?.logoUrl),
+    projectCount: projects.length,
+    memberCount: workspace?._count.members ?? 0,
+    taskCount,
+    reportsReady: projects.length > 0,
+    weeklyDigestEnabled: workspaceState?.weeklyDigestEnabled ?? false,
+  });
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f4f7fb]">
@@ -152,7 +155,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               projectName: task.project.name,
               dueLabel: task.dueDate ? formatRelative(task.dueDate) : null,
             }))}
-            checklist={checklist}
+            checklist={onboarding.items.map((item) => ({ label: item.label, done: item.done }))}
+            onboardingHref="/onboarding"
+            nextChecklistHref={onboarding.nextItem?.href ?? "/onboarding"}
+            nextChecklistLabel={onboarding.nextItem?.cta ?? "Setup hub"}
             showChecklist={!workspaceState?.onboardingDismissedAt}
           />
         )}

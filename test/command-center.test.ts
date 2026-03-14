@@ -26,6 +26,7 @@ test("buildCommandItems includes navigation, projects, tasks and signals", () =>
   });
 
   assert.ok(items.some((item) => item.id === "nav-reports"));
+  assert.ok(items.some((item) => item.id === "nav-onboarding"));
   assert.ok(items.some((item) => item.id === "project-project_1"));
   assert.ok(items.some((item) => item.id === "task-task_1"));
   assert.ok(items.some((item) => item.id === "signal-alert_1"));
