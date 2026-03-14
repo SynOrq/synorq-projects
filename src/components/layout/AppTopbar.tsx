@@ -9,11 +9,11 @@ import {
   CheckCheck,
   FolderKanban,
   Rocket,
-  Search,
   Sparkles,
   TriangleAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import CommandCenter from "@/components/layout/CommandCenter";
 
 type AlertItem = {
   id: string;
@@ -35,6 +35,8 @@ interface AppTopbarProps {
   overdueCount: number;
   unreadAlertCount: number;
   alerts: AlertItem[];
+  commandProjects: Array<{ id: string; name: string; color: string }>;
+  commandTasks: Array<{ id: string; title: string; href: string; projectName: string; dueLabel?: string | null }>;
   checklist: ChecklistItem[];
   showChecklist: boolean;
 }
@@ -45,6 +47,8 @@ export default function AppTopbar({
   overdueCount,
   unreadAlertCount,
   alerts,
+  commandProjects,
+  commandTasks,
   checklist,
   showChecklist,
 }: AppTopbarProps) {
@@ -100,18 +104,7 @@ export default function AppTopbar({
             </div>
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 lg:min-w-[320px]">
-                <Search size={15} className="text-slate-400" />
-                <span className="truncate">
-                  Hizli erisim:
-                  {" "}
-                  <Link href="/projects" className="font-semibold text-slate-700 hover:text-slate-950">Projeler</Link>
-                  {", "}
-                  <Link href="/members" className="font-semibold text-slate-700 hover:text-slate-950">Ekip</Link>
-                  {", "}
-                  <Link href="/settings" className="font-semibold text-slate-700 hover:text-slate-950">Ayarlar</Link>
-                </span>
-              </div>
+              <CommandCenter projects={commandProjects} focusTasks={commandTasks} alerts={alerts} />
 
               <div className="flex gap-2">
                 <Button asChild variant="outline" size="sm">

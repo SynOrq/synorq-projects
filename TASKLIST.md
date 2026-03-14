@@ -136,11 +136,11 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [ ] add-team-member flow
   - [ ] save-first-view flow
 - [ ] Global command/search center
-  - [ ] project search
-  - [ ] task search
+  - [x] project search
+  - [x] task search
   - [ ] people search
-  - [ ] commands
-  - [ ] quick navigation
+  - [x] commands
+  - [x] quick navigation
 
 ## Phase 3: P2 Growth Modules
 

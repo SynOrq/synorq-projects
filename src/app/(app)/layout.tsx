@@ -66,6 +66,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         }),
       ])
     : [0, [], []];
+  const focusTasks = workspace
+    ? await db.task.findMany({
+        where: {
+          project: { workspaceId: workspace.id },
+          assigneeId: userId,
+          status: { notIn: ["DONE", "CANCELLED"] },
+        },
+        select: {
+          id: true,
+          title: true,
+          dueDate: true,
+          project: { select: { id: true, name: true } },
+        },
+        orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+        take: 6,
+      })
+    : [];
   const workspaceState = workspace
     ? await findWorkspaceState({
         workspaceId: workspace.id,
@@ -127,6 +144,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             overdueCount={overdueCount}
             unreadAlertCount={unreadAlertCount}
             alerts={alerts}
+            commandProjects={projects}
+            commandTasks={focusTasks.map((task) => ({
+              id: task.id,
+              title: task.title,
+              href: `/projects/${task.project.id}`,
+              projectName: task.project.name,
+              dueLabel: task.dueDate ? formatRelative(task.dueDate) : null,
+            }))}
             checklist={checklist}
             showChecklist={!workspaceState?.onboardingDismissedAt}
           />
