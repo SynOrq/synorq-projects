@@ -7,3 +7,4 @@ import "./command-center.test.ts";
 import "./onboarding.test.ts";
 import "./projects-saved-view.test.ts";
 import "./dashboard.test.ts";
+import "./projects-portfolio.test.ts";

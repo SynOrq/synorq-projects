@@ -58,10 +58,10 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
 - [ ] Projects portfolio ikinci iterasyon
   - [x] owner/client/type alanlari gosterilecek
   - [x] saved views kalici hale getirilecek
-  - [ ] portfolio risk trend
-  - [ ] owner-based distribution
+  - [x] portfolio risk trend
+  - [x] owner-based distribution
   - [x] milestone progress
-  - [ ] workload summary
+  - [x] workload summary
 - [x] New project flow wizard olarak yeniden yazildi
   - [x] Step 1: Basic information
   - [x] Step 2: Team and template

@@ -19,7 +19,13 @@ import {
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { analyzeProjects, type PortfolioProject } from "@/lib/portfolio";
+import {
+  buildOwnerDistribution,
+  buildPortfolioRiskTrend,
+  buildPortfolioWorkloadSummary,
+} from "@/lib/projects-portfolio";
 import { createSavedProjectsView, normalizeSavedProjectsView, resolveProjectFilters } from "@/lib/projects-saved-view";
+import { analyzeTeamCapacity } from "@/lib/team-capacity";
 import { formatDate, formatRelative } from "@/lib/utils";
 import { findWorkspaceState } from "@/lib/workspace-state";
 import { Badge } from "@/components/ui/badge";
@@ -60,7 +66,11 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
     where: { members: { some: { userId: session.user.id } } },
     include: {
       owner: { select: { id: true, name: true, email: true } },
-      members: { select: { userId: true } },
+      members: {
+        include: {
+          user: { select: { id: true, name: true, email: true, image: true } },
+        },
+      },
     },
   });
 
@@ -91,6 +101,9 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
           createdAt: true,
           updatedAt: true,
           priority: true,
+          estimatedH: true,
+          loggedH: true,
+          labels: true,
         },
       },
       milestones: {
@@ -210,6 +223,38 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
     .filter((project) => project.dueDateResolved)
     .sort((a, b) => (a.dueInDays ?? 999) - (b.dueInDays ?? 999))[0];
   const fastestProject = [...filteredProjects].sort((a, b) => b.completionRate - a.completionRate)[0];
+  const ownerDistribution = buildOwnerDistribution(filteredProjects);
+  const riskTrend = buildPortfolioRiskTrend(filteredProjects);
+  const teamCapacity = analyzeTeamCapacity(
+    workspace.members.map((member) => ({
+      id: member.user.id,
+      name: member.user.name ?? member.user.email,
+      email: member.user.email,
+      image: member.user.image,
+      role: member.role,
+      isOwner: member.user.id === workspace.ownerId,
+    })),
+    projectsRaw.flatMap((project) =>
+      project.tasks.map((task) => ({
+        id: task.id,
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        completedAt: task.completedAt,
+        assigneeId: task.assigneeId,
+        estimatedH: task.estimatedH,
+        loggedH: task.loggedH,
+        labels: task.labels,
+        project: {
+          id: project.id,
+          name: project.name,
+          color: project.color,
+        },
+      }))
+    )
+  );
+  const workloadSummary = buildPortfolioWorkloadSummary(teamCapacity.snapshots);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
@@ -683,6 +728,114 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                 <div className="mt-2 text-sm text-emerald-700">%{fastestProject?.completionRate ?? 0} tamamlanma</div>
               </div>
             </div>
+          </div>
+        </section>
+      )}
+
+      {filteredProjects.length > 0 && (
+        <section className="grid gap-6 xl:grid-cols-[0.96fr_1.04fr]">
+          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-black text-slate-950">Risk trend</h2>
+                <p className="mt-1 text-sm text-slate-500">Portfoyde risk baskisinin hangi katmanda toplandigini okuyun.</p>
+              </div>
+              <Badge variant="warning">{riskProjects} risk bandinda</Badge>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              {riskTrend.map((item) => (
+                <div key={item.key}>
+                  <div className="mb-2 flex items-center justify-between text-sm font-medium text-slate-600">
+                    <span>{item.label}</span>
+                    <span>{item.count}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-100">
+                    <div className={`h-2 rounded-full ${item.tone}`} style={{ width: `${item.width}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-black text-slate-950">Owner distribution</h2>
+                <p className="mt-1 text-sm text-slate-500">Sahiplik dagilimi, risk yogunlugu ve ortalama completion ayni tabloda.</p>
+              </div>
+              <Badge variant="secondary">{ownerDistribution.length} owner segmenti</Badge>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              {ownerDistribution.map((owner) => (
+                <div key={owner.id} className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-black text-slate-950">{owner.name}</div>
+                      <div className="mt-1 text-xs text-slate-500">{owner.projects} proje • %{owner.averageCompletion} ort. completion</div>
+                    </div>
+                    <div className="text-right text-xs text-slate-500">
+                      <div>{owner.riskProjects} risk proje</div>
+                      <div className="mt-1">{owner.overdueTasks} overdue task</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {filteredProjects.length > 0 && (
+        <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-950">Workload summary</h2>
+              <p className="mt-1 text-sm text-slate-500">Team capacity sinyallerini portfolio baglaminda owner ve teslim baskisiyla okuyun.</p>
+            </div>
+            <Badge variant={workloadSummary.overloadedMembers > 0 ? "danger" : "success"}>
+              %{workloadSummary.averageUtilization} ort. utilization
+            </Badge>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-3xl bg-slate-50 p-5">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Overloaded</div>
+              <div className="mt-2 text-2xl font-black text-slate-950">{workloadSummary.overloadedMembers}</div>
+              <div className="mt-1 text-xs text-slate-500">uyede kapasite baskisi var</div>
+            </div>
+            <div className="rounded-3xl bg-slate-50 p-5">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Watch</div>
+              <div className="mt-2 text-2xl font-black text-slate-950">{workloadSummary.watchMembers}</div>
+              <div className="mt-1 text-xs text-slate-500">uyede yakin takip gerekiyor</div>
+            </div>
+            <div className="rounded-3xl bg-slate-50 p-5">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Projected</div>
+              <div className="mt-2 text-2xl font-black text-slate-950">{workloadSummary.projectedHours}h</div>
+              <div className="mt-1 text-xs text-slate-500">{workloadSummary.capacityHours}h haftalik kapasite</div>
+            </div>
+            <div className="rounded-3xl bg-slate-50 p-5">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Top load</div>
+              <div className="mt-2 text-2xl font-black text-slate-950">{workloadSummary.topLoad[0]?.name ?? "Veri yok"}</div>
+              <div className="mt-1 text-xs text-slate-500">{workloadSummary.topLoad[0]?.activeTasks ?? 0} aktif task</div>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-3 xl:grid-cols-4">
+            {workloadSummary.topLoad.map((member) => (
+              <div key={member.id} className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-black text-slate-950">{member.name}</div>
+                    <div className="mt-1 text-xs text-slate-500">{member.role} • {member.projectedHours}/{member.weeklyCapacityHours}h</div>
+                  </div>
+                  <Badge variant={member.loadState === "overloaded" ? "danger" : member.loadState === "watch" ? "warning" : "success"}>
+                    %{member.utilization}
+                  </Badge>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}
