@@ -16,8 +16,15 @@ type Props = {
     id: string;
     title: string;
     href: string;
-    projectName: string;
-    dueLabel?: string | null;
+      projectName: string;
+      dueLabel?: string | null;
+  }>;
+  people: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: "ADMIN" | "MEMBER" | "VIEWER";
+    isOwner?: boolean;
   }>;
   alerts: Array<{
     id: string;
@@ -28,9 +35,9 @@ type Props = {
   }>;
 };
 
-const groupOrder: Array<CommandItem["group"]> = ["Navigate", "Create", "Projects", "My Work", "Signals"];
+const groupOrder: Array<CommandItem["group"]> = ["Navigate", "Create", "Projects", "My Work", "People", "Signals"];
 
-export default function CommandCenter({ projects, focusTasks, alerts }: Props) {
+export default function CommandCenter({ projects, focusTasks, people, alerts }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -46,7 +53,7 @@ export default function CommandCenter({ projects, focusTasks, alerts }: Props) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const items = useMemo(() => buildCommandItems({ projects, focusTasks, alerts }), [alerts, focusTasks, projects]);
+  const items = useMemo(() => buildCommandItems({ projects, focusTasks, people, alerts }), [alerts, focusTasks, people, projects]);
   const filtered = useMemo(() => filterCommandItems(items, query), [items, query]);
 
   return (
@@ -57,7 +64,7 @@ export default function CommandCenter({ projects, focusTasks, alerts }: Props) {
           className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 transition hover:border-slate-300 hover:bg-white lg:min-w-[320px]"
         >
           <Search size={15} className="text-slate-400" />
-          <span className="flex-1 truncate text-left">Komut, proje veya gorev ara</span>
+          <span className="flex-1 truncate text-left">Komut, proje, gorev veya kisi ara</span>
           <span className="rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500">
             Ctrl K
           </span>
@@ -78,7 +85,7 @@ export default function CommandCenter({ projects, focusTasks, alerts }: Props) {
                 autoFocus
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Dashboard, risk projects, Northstar, launch checklist..."
+                placeholder="Dashboard, Aylin Demir, risk projects, Northstar, launch checklist..."
                 className="w-full border-none bg-transparent text-sm text-slate-700 outline-none"
               />
             </div>

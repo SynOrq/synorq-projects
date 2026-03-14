@@ -37,6 +37,7 @@ interface AppTopbarProps {
   alerts: AlertItem[];
   commandProjects: Array<{ id: string; name: string; color: string }>;
   commandTasks: Array<{ id: string; title: string; href: string; projectName: string; dueLabel?: string | null }>;
+  commandPeople: Array<{ id: string; name: string; email: string; role: "ADMIN" | "MEMBER" | "VIEWER"; isOwner?: boolean }>;
   checklist: ChecklistItem[];
   onboardingHref: string;
   nextChecklistHref: string;
@@ -52,6 +53,7 @@ export default function AppTopbar({
   alerts,
   commandProjects,
   commandTasks,
+  commandPeople,
   checklist,
   onboardingHref,
   nextChecklistHref,
@@ -110,7 +112,7 @@ export default function AppTopbar({
             </div>
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <CommandCenter projects={commandProjects} focusTasks={commandTasks} alerts={alerts} />
+              <CommandCenter projects={commandProjects} focusTasks={commandTasks} people={commandPeople} alerts={alerts} />
 
               <div className="flex gap-2">
                 <Button asChild variant="outline" size="sm">

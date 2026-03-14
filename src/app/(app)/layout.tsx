@@ -18,10 +18,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     },
     select: {
       id: true,
+      ownerId: true,
       name: true,
       slug: true,
       logoUrl: true,
       _count: { select: { members: true, projects: true } },
+      members: {
+        select: {
+          role: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { joinedAt: "asc" },
+      },
     },
   });
 
@@ -154,6 +168,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               href: `/projects/${task.project.id}`,
               projectName: task.project.name,
               dueLabel: task.dueDate ? formatRelative(task.dueDate) : null,
+            }))}
+            commandPeople={workspace.members.map((member) => ({
+              id: member.user.id,
+              name: member.user.name ?? member.user.email,
+              email: member.user.email,
+              role: member.role,
+              isOwner: member.user.id === workspace.ownerId,
             }))}
             checklist={onboarding.items.map((item) => ({ label: item.label, done: item.done }))}
             onboardingHref="/onboarding"

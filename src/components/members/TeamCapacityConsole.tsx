@@ -28,6 +28,7 @@ type Props = {
   currentUserId: string;
   canManageMembers: boolean;
   initialMembers: MemberRecord[];
+  spotlightMemberId?: string;
   capacity: {
     snapshots: CapacitySnapshot[];
     heatmap: CapacityHeatmap;
@@ -71,6 +72,7 @@ export default function TeamCapacityConsole({
   currentUserId,
   canManageMembers,
   initialMembers,
+  spotlightMemberId,
   capacity,
 }: Props) {
   const [members, setMembers] = useState(initialMembers);
@@ -89,6 +91,10 @@ export default function TeamCapacityConsole({
       viewers,
     };
   }, [members]);
+  const spotlightMember = useMemo(
+    () => capacity.snapshots.find((member) => member.id === spotlightMemberId) ?? null,
+    [capacity.snapshots, spotlightMemberId]
+  );
 
   const maxHeatValue = Math.max(1, ...capacity.heatmap.rows.flatMap((row) => row.values));
 
@@ -198,6 +204,26 @@ export default function TeamCapacityConsole({
         <MetricCard label="Viewer seats" value={String(memberStats.viewers)} note="read-only erisim" />
       </section>
 
+      {spotlightMember && (
+        <section className="rounded-[30px] border border-indigo-200 bg-[linear-gradient(135deg,rgba(99,102,241,0.08),rgba(255,255,255,0.95))] p-6 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600">Member spotlight</div>
+              <div className="mt-2 text-2xl font-black text-slate-950">{spotlightMember.name}</div>
+              <div className="mt-1 text-sm text-slate-600">
+                {spotlightMember.role} {spotlightMember.isOwner ? "• Owner" : ""} • {spotlightMember.email}
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-4">
+              <StatChip label="Utilization" value={`%${spotlightMember.utilization}`} />
+              <StatChip label="Aktif" value={String(spotlightMember.activeTasks)} />
+              <StatChip label="Overdue" value={String(spotlightMember.overdueTasks)} />
+              <StatChip label="Blocked" value={String(spotlightMember.blockedTasks)} />
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="grid gap-6 xl:grid-cols-[1.06fr_0.94fr]">
         <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2 text-lg font-black text-slate-950">
@@ -206,7 +232,14 @@ export default function TeamCapacityConsole({
           </div>
           <div className="mt-5 space-y-4">
             {capacity.snapshots.map((member) => (
-              <div key={member.id} className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+              <div
+                key={member.id}
+                className={`rounded-[24px] border px-4 py-4 ${
+                  member.id === spotlightMemberId
+                    ? "border-indigo-200 bg-indigo-50/60 shadow-[0_14px_32px_-24px_rgba(79,70,229,0.45)]"
+                    : "border-slate-200 bg-slate-50"
+                }`}
+              >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-3">
@@ -307,7 +340,7 @@ export default function TeamCapacityConsole({
                   {capacity.snapshots.map((member) => {
                     const row = capacity.heatmap.rows.find((item) => item.memberId === member.id);
                     return (
-                      <tr key={member.id}>
+                    <tr key={member.id}>
                         <td className="rounded-l-2xl bg-slate-50 px-3 py-3 font-semibold text-slate-900">
                           {member.name}
                         </td>
@@ -441,7 +474,12 @@ export default function TeamCapacityConsole({
                   const canEdit = canManageMembers && !isSelf && !isOwner;
 
                   return (
-                    <tr key={member.id} className="transition-colors hover:bg-slate-50/60">
+                    <tr
+                      key={member.id}
+                      className={`transition-colors hover:bg-slate-50/60 ${
+                        member.user.id === spotlightMemberId ? "bg-indigo-50/50" : ""
+                      }`}
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <Avatar name={member.user.name ?? member.user.email} image={member.user.image} size="sm" />

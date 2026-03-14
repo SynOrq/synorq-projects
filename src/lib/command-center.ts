@@ -3,7 +3,7 @@ export type CommandItem = {
   title: string;
   subtitle: string;
   href: string;
-  group: "Navigate" | "Create" | "Projects" | "My Work" | "Signals";
+  group: "Navigate" | "Create" | "Projects" | "My Work" | "People" | "Signals";
   accent?: string;
   keywords: string[];
 };
@@ -30,9 +30,18 @@ type CommandAlert = {
   tone: "risk" | "activity";
 };
 
+type CommandPerson = {
+  id: string;
+  name: string;
+  email: string;
+  role: "ADMIN" | "MEMBER" | "VIEWER";
+  isOwner?: boolean;
+};
+
 export function buildCommandItems(params: {
   projects: CommandProject[];
   focusTasks: CommandTask[];
+  people: CommandPerson[];
   alerts: CommandAlert[];
 }) {
   const items: CommandItem[] = [
@@ -146,6 +155,17 @@ export function buildCommandItems(params: {
       href: task.href,
       group: "My Work" as const,
       keywords: [task.title.toLowerCase(), task.projectName.toLowerCase(), "task", "my work"],
+    }))
+  );
+
+  items.push(
+    ...params.people.map((person) => ({
+      id: `person-${person.id}`,
+      title: person.name,
+      subtitle: `${person.role}${person.isOwner ? " • Owner" : ""} • ${person.email}`,
+      href: `/members?member=${person.id}`,
+      group: "People" as const,
+      keywords: [person.name.toLowerCase(), person.email.toLowerCase(), person.role.toLowerCase(), "people", "team", "member"],
     }))
   );
 

@@ -138,7 +138,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
 - [ ] Global command/search center
   - [x] project search
   - [x] task search
-  - [ ] people search
+  - [x] people search
   - [x] commands
   - [x] quick navigation
 

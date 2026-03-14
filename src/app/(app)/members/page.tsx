@@ -4,10 +4,17 @@ import { analyzeTeamCapacity } from "@/lib/team-capacity";
 import { redirect } from "next/navigation";
 import TeamCapacityConsole from "@/components/members/TeamCapacityConsole";
 
-export default async function MembersPage() {
+type MembersPageProps = {
+  searchParams?: Promise<{
+    member?: string;
+  }>;
+};
+
+export default async function MembersPage({ searchParams }: MembersPageProps) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/login");
   const currentUserId = session.user.id;
+  const filters = await searchParams;
 
   const workspace = await db.workspace.findFirst({
     where: { members: { some: { userId: session.user.id } } },
@@ -71,6 +78,7 @@ export default async function MembersPage() {
       canManageMembers={canManageMembers}
       initialMembers={workspace.members}
       capacity={capacity}
+      spotlightMemberId={filters?.member}
     />
   );
 }

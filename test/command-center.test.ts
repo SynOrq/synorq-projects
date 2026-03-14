@@ -23,6 +23,15 @@ test("buildCommandItems includes navigation, projects, tasks and signals", () =>
         tone: "risk",
       },
     ],
+    people: [
+      {
+        id: "user_1",
+        name: "Aylin Demir",
+        email: "aylin@synorq.demo",
+        role: "ADMIN",
+        isOwner: false,
+      },
+    ],
   });
 
   assert.ok(items.some((item) => item.id === "nav-reports"));
@@ -30,6 +39,7 @@ test("buildCommandItems includes navigation, projects, tasks and signals", () =>
   assert.ok(items.some((item) => item.id === "nav-onboarding"));
   assert.ok(items.some((item) => item.id === "project-project_1"));
   assert.ok(items.some((item) => item.id === "task-task_1"));
+  assert.ok(items.some((item) => item.id === "person-user_1"));
   assert.ok(items.some((item) => item.id === "signal-alert_1"));
 });
 
@@ -37,12 +47,23 @@ test("filterCommandItems matches query against titles and keywords", () => {
   const items = buildCommandItems({
     projects: [{ id: "project_1", name: "Northstar", color: "#2563eb" }],
     focusTasks: [],
+    people: [
+      {
+        id: "user_1",
+        name: "Aylin Demir",
+        email: "aylin@synorq.demo",
+        role: "ADMIN",
+        isOwner: false,
+      },
+    ],
     alerts: [],
   });
 
   const reports = filterCommandItems(items, "executive");
   const projects = filterCommandItems(items, "northstar");
+  const people = filterCommandItems(items, "aylin");
 
   assert.ok(reports.some((item) => item.id === "nav-reports"));
   assert.ok(projects.some((item) => item.id === "project-project_1"));
+  assert.ok(people.some((item) => item.id === "person-user_1"));
 });
