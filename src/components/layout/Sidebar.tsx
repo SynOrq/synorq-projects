@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BellRing,
+  ChartColumnIncreasing,
   LayoutDashboard,
   FolderKanban,
   CheckSquare,
@@ -30,6 +31,7 @@ const navItems = [
   { href: "/my-tasks",   icon: CheckSquare,     label: "Görevlerim" },
   { href: "/audit",      icon: ShieldCheck,     label: "Audit Log" },
   { href: "/members",    icon: Users,           label: "Ekip" },
+  { href: "/reports",    icon: ChartColumnIncreasing, label: "Raporlar" },
   { href: "/settings",   icon: Settings,        label: "Ayarlar" },
 ];
 
