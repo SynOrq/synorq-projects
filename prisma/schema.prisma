@@ -28,6 +28,7 @@ model User {
   createdTasks     Task[]            @relation("TaskCreator")
   comments         Comment[]
   activityLogs     ActivityLog[]
+  workspaceStates  WorkspaceUserState[]
 }
 
 model Account {
@@ -87,6 +88,7 @@ model Workspace {
   owner   User              @relation("WorkspaceOwner", fields: [ownerId], references: [id])
   members WorkspaceMember[]
   projects Project[]
+  states  WorkspaceUserState[]
 }
 
 model WorkspaceMember {
@@ -237,4 +239,22 @@ model ActivityLog {
 
   project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   user    User     @relation(fields: [userId], references: [id])
+}
+
+model WorkspaceUserState {
+  id                   String    @id @default(cuid())
+  workspaceId          String
+  userId               String
+  notificationsReadAt  DateTime?
+  onboardingDismissedAt DateTime?
+  riskAlertsEnabled    Boolean   @default(true)
+  activityAlertsEnabled Boolean  @default(true)
+  weeklyDigestEnabled  Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
 }

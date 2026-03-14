@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Building, LogOut, Palette, Settings as SettingsIcon, User } from "lucide-react";
+import { BellRing, Building, LogOut, Palette, Settings as SettingsIcon, ShieldCheck, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 
@@ -17,6 +17,11 @@ type Props = {
     email: string | null;
     image: string | null;
   };
+  initialPreferences: {
+    riskAlertsEnabled: boolean;
+    activityAlertsEnabled: boolean;
+    weeklyDigestEnabled: boolean;
+  };
   canManageWorkspace: boolean;
   logoutAction: () => Promise<void>;
 };
@@ -24,6 +29,7 @@ type Props = {
 export default function SettingsConsole({
   initialWorkspace,
   initialUser,
+  initialPreferences,
   canManageWorkspace,
   logoutAction,
 }: Props) {
@@ -33,12 +39,18 @@ export default function SettingsConsole({
   const [workspaceLogoUrl, setWorkspaceLogoUrl] = useState(initialWorkspace.logoUrl ?? "");
   const [profileName, setProfileName] = useState(initialUser.name ?? "");
   const [profileImage, setProfileImage] = useState(initialUser.image ?? "");
+  const [riskAlertsEnabled, setRiskAlertsEnabled] = useState(initialPreferences.riskAlertsEnabled);
+  const [activityAlertsEnabled, setActivityAlertsEnabled] = useState(initialPreferences.activityAlertsEnabled);
+  const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(initialPreferences.weeklyDigestEnabled);
   const [workspaceMessage, setWorkspaceMessage] = useState<string | null>(null);
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [preferencesMessage, setPreferencesMessage] = useState<string | null>(null);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [preferencesError, setPreferencesError] = useState<string | null>(null);
   const [isWorkspacePending, startWorkspaceTransition] = useTransition();
   const [isProfilePending, startProfileTransition] = useTransition();
+  const [isPreferencesPending, startPreferencesTransition] = useTransition();
 
   function saveWorkspace() {
     startWorkspaceTransition(async () => {
@@ -95,6 +107,38 @@ export default function SettingsConsole({
         router.refresh();
       } catch (err) {
         setProfileError(err instanceof Error ? err.message : "Profil guncellenemedi.");
+      }
+    });
+  }
+
+  function savePreferences() {
+    startPreferencesTransition(async () => {
+      setPreferencesMessage(null);
+      setPreferencesError(null);
+
+      try {
+        const res = await fetch("/api/workspace/state", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            riskAlertsEnabled,
+            activityAlertsEnabled,
+            weeklyDigestEnabled,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error ?? "Bildirim tercihleri guncellenemedi.");
+        }
+
+        setRiskAlertsEnabled(data.state.riskAlertsEnabled ?? true);
+        setActivityAlertsEnabled(data.state.activityAlertsEnabled ?? true);
+        setWeeklyDigestEnabled(data.state.weeklyDigestEnabled ?? false);
+        setPreferencesMessage("Bildirim tercihleri kaydedildi.");
+        router.refresh();
+      } catch (err) {
+        setPreferencesError(err instanceof Error ? err.message : "Bildirim tercihleri guncellenemedi.");
       }
     });
   }
@@ -238,7 +282,55 @@ export default function SettingsConsole({
         </section>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_auto]">
+      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 flex items-center gap-2 text-xl font-black text-slate-950">
+            <BellRing size={20} className="text-indigo-600" />
+            Bildirim Tercihleri
+          </h2>
+          <div className="space-y-3">
+            {[
+              {
+                label: "Teslim riski alarmlari",
+                description: "Geciken gorevler ve teslim riski sinyalleri topbar ve bildirim merkezinde gosterilir.",
+                checked: riskAlertsEnabled,
+                onChange: setRiskAlertsEnabled,
+              },
+              {
+                label: "Ekip aktivite akisi",
+                description: "Yorumlar, tasima hareketleri ve ekip aksiyonlari activity feed icinde gosterilir.",
+                checked: activityAlertsEnabled,
+                onChange: setActivityAlertsEnabled,
+              },
+              {
+                label: "Haftalik ozet hazirligi",
+                description: "Sonraki surumde e-posta ozetleri icin kullanilacak tercih simdiden kaydedilir.",
+                checked: weeklyDigestEnabled,
+                onChange: setWeeklyDigestEnabled,
+              },
+            ].map((item) => (
+              <label key={item.label} className="flex items-start gap-3 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+                <input
+                  type="checkbox"
+                  checked={item.checked}
+                  onChange={(event) => item.onChange(event.target.checked)}
+                  disabled={isPreferencesPending}
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">{item.label}</div>
+                  <div className="mt-1 text-xs leading-6 text-slate-500">{item.description}</div>
+                </div>
+              </label>
+            ))}
+            {preferencesError && <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{preferencesError}</div>}
+            {preferencesMessage && <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{preferencesMessage}</div>}
+            <Button onClick={savePreferences} loading={isPreferencesPending} variant="outline">
+              Tercihleri Kaydet
+            </Button>
+          </div>
+        </section>
+
         <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-4 flex items-center gap-2 text-xl font-black text-slate-950">
             <Palette size={20} className="text-orange-600" />
@@ -248,6 +340,23 @@ export default function SettingsConsole({
             Tema secenekleri ve kiyaslamali layout tercihleri sonraki surumde bu ekrana eklenecek. Su an urun,
             Synorq platformunun light-first SaaS tasarim sistemiyle calisiyor.
           </p>
+        </section>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1fr_auto]">
+        <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 flex items-center gap-2 text-xl font-black text-slate-950">
+            <ShieldCheck size={20} className="text-cyan-600" />
+            Governance
+          </h2>
+          <p className="text-sm leading-7 text-slate-600">
+            Audit log, rol degisiklikleri ve workspace hareketleri artik ayri bir governance yuzeyinden izlenebilir.
+          </p>
+          <div className="mt-4">
+            <Button asChild variant="outline">
+              <a href="/audit">Audit Logu Ac</a>
+            </Button>
+          </div>
         </section>
 
         <section className="rounded-[30px] border border-red-100 bg-white p-6 shadow-sm">

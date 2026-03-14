@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   CheckSquare,
+  ShieldCheck,
   Users,
   Settings,
   ChevronDown,
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/notifications", icon: BellRing, label: "Bildirimler" },
   { href: "/projects",   icon: FolderKanban,    label: "Projeler" },
   { href: "/my-tasks",   icon: CheckSquare,     label: "Görevlerim" },
+  { href: "/audit",      icon: ShieldCheck,     label: "Audit Log" },
   { href: "/members",    icon: Users,           label: "Ekip" },
   { href: "/settings",   icon: Settings,        label: "Ayarlar" },
 ];

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRelative } from "@/lib/utils";
+import { findWorkspaceState } from "@/lib/workspace-state";
 import AppTopbar from "@/components/layout/AppTopbar";
 import Sidebar from "@/components/layout/Sidebar";
 
@@ -48,6 +49,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             id: true,
             title: true,
             dueDate: true,
+            updatedAt: true,
             project: { select: { id: true, name: true } },
           },
           orderBy: { dueDate: "asc" },
@@ -64,12 +66,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         }),
       ])
     : [0, [], []];
+  const workspaceState = workspace
+    ? await findWorkspaceState({
+        workspaceId: workspace.id,
+        userId,
+        includeOnboarding: true,
+        includePreferences: true,
+      })
+    : null;
 
   const now = new Date();
   const overdueCount = overdueTasks.filter((task) => task.dueDate && new Date(task.dueDate) < now).length;
+  const notificationsReadAt = workspaceState?.notificationsReadAt ?? null;
+  const riskAlertsEnabled = workspaceState?.riskAlertsEnabled ?? true;
+  const activityAlertsEnabled = workspaceState?.activityAlertsEnabled ?? true;
 
   const alerts = [
-    ...overdueTasks
+    ...(riskAlertsEnabled
+      ? overdueTasks
       .filter((task) => task.dueDate && new Date(task.dueDate) < now)
       .map((task) => ({
         id: `risk-${task.id}`,
@@ -77,19 +91,26 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         detail: `${task.project.name} icinde gecikmis gorev • ${formatRelative(task.dueDate as Date)}`,
         href: `/projects/${task.project.id}`,
         tone: "risk" as const,
-      })),
-    ...activity.map((item) => ({
+        unread: !notificationsReadAt || task.updatedAt > notificationsReadAt,
+      }))
+      : []),
+    ...(activityAlertsEnabled
+      ? activity.map((item) => ({
       id: `activity-${item.id}`,
       title: item.project?.name ?? "Workspace aktivitesi",
       detail: `${item.user.name ?? item.user.email} • ${item.action} • ${formatRelative(item.createdAt)}`,
       href: item.project?.id ? `/projects/${item.project.id}` : "/dashboard",
       tone: "activity" as const,
-    })),
+      unread: !notificationsReadAt || item.createdAt > notificationsReadAt,
+    }))
+      : []),
   ].slice(0, 4);
+  const unreadAlertCount = alerts.filter((item) => item.unread).length;
 
   const checklist = [
-    { label: "Profil adi tanimli", done: Boolean(session.user.name) },
+    { label: "Profil kimligi tanimli", done: Boolean(session.user.name) && Boolean(session.user.image) },
     { label: "Workspace olusturuldu", done: Boolean(workspace) },
+    { label: "Workspace markasi tanimli", done: Boolean(workspace?.logoUrl) },
     { label: "Ilk proje olusturuldu", done: projects.length > 0 },
     { label: "Ekip daveti basladi", done: (workspace?._count.members ?? 0) > 1 },
     { label: "Task akisi basladi", done: taskCount > 0 },
@@ -104,8 +125,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             workspaceName={workspace.name}
             activeProjectCount={projects.length}
             overdueCount={overdueCount}
+            unreadAlertCount={unreadAlertCount}
             alerts={alerts}
             checklist={checklist}
+            showChecklist={!workspaceState?.onboardingDismissedAt}
           />
         )}
         {children}

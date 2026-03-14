@@ -1,5 +1,6 @@
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { findWorkspaceState } from "@/lib/workspace-state";
 import { redirect } from "next/navigation";
 import SettingsConsole from "@/components/settings/SettingsConsole";
 
@@ -22,6 +23,11 @@ export default async function SettingsPage() {
 
   const currentRole = workspace.members[0]?.role;
   const canManageWorkspace = workspace.ownerId === userId || currentRole === "ADMIN";
+  const workspaceState = await findWorkspaceState({
+    workspaceId: workspace.id,
+    userId,
+    includePreferences: true,
+  });
 
   async function logoutAction() {
     "use server";
@@ -39,6 +45,11 @@ export default async function SettingsPage() {
         name: session.user?.name ?? null,
         email: session.user?.email ?? null,
         image: session.user?.image ?? null,
+      }}
+      initialPreferences={{
+        riskAlertsEnabled: workspaceState?.riskAlertsEnabled ?? true,
+        activityAlertsEnabled: workspaceState?.activityAlertsEnabled ?? true,
+        weeklyDigestEnabled: workspaceState?.weeklyDigestEnabled ?? false,
       }}
       canManageWorkspace={canManageWorkspace}
       logoutAction={logoutAction}
