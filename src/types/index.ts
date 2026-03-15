@@ -4,6 +4,7 @@ export type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "CANCEL
 export type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type ProjectStatus = "ACTIVE" | "ON_HOLD" | "COMPLETED" | "ARCHIVED";
 export type ProjectType = "WEBSITE" | "MOBILE_APP" | "RETAINER" | "INTERNAL" | "MAINTENANCE";
+export type ProjectVisibility = "WORKSPACE" | "MEMBERS" | "LEADERSHIP" | "PRIVATE";
 
 export type TaskWithRelations = Task & {
   assignee: User | null;
@@ -53,4 +54,15 @@ export const PROJECT_TYPE_OPTIONS: Array<{ value: ProjectType; label: string; de
   { value: "RETAINER", label: "Retainer", description: "Ongoing client operations and recurring delivery." },
   { value: "INTERNAL", label: "Internal", description: "Internal initiative, playbook or operations work." },
   { value: "MAINTENANCE", label: "Maintenance", description: "Support, QA and post-launch service work." },
+];
+
+export const PROJECT_VISIBILITY_OPTIONS: Array<{
+  value: ProjectVisibility;
+  label: string;
+  description: string;
+}> = [
+  { value: "WORKSPACE", label: "Workspace", description: "Visible to all workspace members and viewer seats." },
+  { value: "MEMBERS", label: "Members only", description: "Visible to admins and members; viewers stay out." },
+  { value: "LEADERSHIP", label: "Leadership", description: "Visible to workspace owner, admins and project owner." },
+  { value: "PRIVATE", label: "Private", description: "Visible only to workspace owner and project owner." },
 ];

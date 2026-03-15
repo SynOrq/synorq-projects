@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canAccessProject } from "@/lib/project-access";
 import { analyzeProjects, analyzeTeamLoad, type PortfolioProject } from "@/lib/portfolio";
 import { taskCardInclude } from "@/lib/task-detail";
 import { formatDateTime, formatRelative } from "@/lib/utils";
@@ -111,6 +112,18 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
   });
 
   if (!project) notFound();
+  const currentMembership = project.workspace.members.find((member) => member.userId === userId);
+  if (
+    !currentMembership ||
+    !canAccessProject({
+      visibility: project.visibility,
+      workspaceRole: currentMembership.role,
+      isWorkspaceOwner: project.workspace.ownerId === userId,
+      isProjectOwner: project.ownerId === userId,
+    })
+  ) {
+    notFound();
+  }
 
   const tasks = project.sections.flatMap((section) => section.tasks);
   const analyzedProject = analyzeProjects([
@@ -121,6 +134,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
       color: project.color,
       status: project.status,
       type: project.type,
+      visibility: project.visibility,
       priority: project.priority,
       tags: project.tags,
       startDate: project.startDate,
@@ -206,15 +220,6 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
       actorName,
       meta: `${formatRelative(item.createdAt)} • ${formatDateTime(item.createdAt)}`,
     };
-  });
-
-  const overdueTasks = tasks.filter((task) => task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "DONE" && task.status !== "CANCELLED");
-  const unassignedTasks = tasks.filter((task) => task.status !== "DONE" && task.status !== "CANCELLED" && !task.assigneeId);
-  const blockedTasks = tasks.filter((task) => task.labels.includes("Blocked"));
-  const nearDeadlineTasks = tasks.filter((task) => {
-    if (!task.dueDate || task.status === "DONE" || task.status === "CANCELLED") return false;
-    const diff = new Date(task.dueDate).getTime() - Date.now();
-    return diff >= 0 && diff <= 3 * 86400000;
   });
 
   const milestones = project.milestones.map((milestone) => {
@@ -310,6 +315,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
             color: project.color,
             status: project.status,
             type: project.type,
+            visibility: project.visibility,
             priority: project.priority,
             ownerId: project.ownerId,
             clientId: project.clientId,

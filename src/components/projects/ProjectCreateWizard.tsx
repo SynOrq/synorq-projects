@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BriefcaseBusiness, CalendarRange, Check, Flag, Layers3, UsersRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, CalendarRange, Check, Flag, Layers3, ShieldCheck, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { PROJECT_COLORS, PROJECT_TYPE_OPTIONS, type Priority, type ProjectType } from "@/types";
+import { PROJECT_COLORS, PROJECT_TYPE_OPTIONS, PROJECT_VISIBILITY_OPTIONS, type Priority, type ProjectType, type ProjectVisibility } from "@/types";
 
 type MemberOption = {
   id: string;
@@ -55,6 +55,7 @@ export default function ProjectCreateWizard({ members, clients }: ProjectCreateW
   const [clientId, setClientId] = useState("");
   const [ownerId, setOwnerId] = useState(members[0]?.id ?? "");
   const [type, setType] = useState<ProjectType>("INTERNAL");
+  const [visibility, setVisibility] = useState<ProjectVisibility>("WORKSPACE");
   const [priority, setPriority] = useState<Priority>("MEDIUM");
   const [teamMemberIds, setTeamMemberIds] = useState<string[]>(members.slice(0, 2).map((member) => member.id));
   const [startDate, setStartDate] = useState("");
@@ -108,6 +109,7 @@ export default function ProjectCreateWizard({ members, clients }: ProjectCreateW
         clientId: clientId || null,
         ownerId,
         type,
+        visibility,
         priority,
         teamMemberIds,
         startDate: startDate || null,
@@ -256,6 +258,28 @@ export default function ProjectCreateWizard({ members, clients }: ProjectCreateW
                   ))}
                 </div>
               </div>
+              <div className="rounded-[24px] border border-slate-200 bg-white px-4 py-4">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                  <ShieldCheck size={15} className="text-indigo-600" />
+                  Visibility strategy
+                </div>
+                <div className="mt-3 space-y-2">
+                  {PROJECT_VISIBILITY_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setVisibility(option.value)}
+                      className={cn(
+                        "w-full rounded-2xl border px-3 py-3 text-left transition",
+                        visibility === option.value ? "border-indigo-200 bg-indigo-50" : "border-slate-200 bg-slate-50 hover:bg-white"
+                      )}
+                    >
+                      <div className="text-sm font-semibold text-slate-900">{option.label}</div>
+                      <div className="mt-1 text-xs text-slate-500">{option.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -383,6 +407,9 @@ export default function ProjectCreateWizard({ members, clients }: ProjectCreateW
                 <div className="mt-3 text-lg font-black text-slate-950">{name || "Yeni proje"}</div>
                 <div className="mt-2 text-sm text-slate-600">
                   {PROJECT_TYPE_OPTIONS.find((option) => option.value === type)?.label} • {PRIORITY_OPTIONS.find((option) => option.value === priority)?.label} oncelik
+                </div>
+                <div className="mt-1 text-sm text-slate-500">
+                  {PROJECT_VISIBILITY_OPTIONS.find((option) => option.value === visibility)?.label} access strategy
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {tags.map((tag) => (

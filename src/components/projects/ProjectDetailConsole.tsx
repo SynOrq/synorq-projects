@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, CalendarRange, CheckCircle2, Clock3, FileStack, FolderKanban, History, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { getProjectVisibilityMeta } from "@/lib/project-access";
 import { formatDate, formatDateTime, formatRelative } from "@/lib/utils";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "@/types";
 import KanbanBoard from "@/components/projects/KanbanBoard";
@@ -84,6 +85,7 @@ type Props = {
     color: string;
     status: string;
     type: string;
+    visibility: string;
     priority: string;
     ownerId: string | null;
     clientId: string | null;
@@ -156,6 +158,7 @@ export default function ProjectDetailConsole({
   clientOptions,
   taskOptions,
 }: Props) {
+  const visibilityMeta = getProjectVisibilityMeta(project.visibility as "WORKSPACE" | "MEMBERS" | "LEADERSHIP" | "PRIVATE");
   const blockers = tasks.filter((task) => task.labels.includes("Blocked") || (task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "DONE"));
   const recentDone = tasks.filter((task) => task.status === "DONE").slice(0, 4);
   const topHealthFactors = [...health.factors]
@@ -504,6 +507,11 @@ export default function ProjectDetailConsole({
               <div className="text-xs text-slate-400">Ownership gap</div>
               <div className="mt-2 text-lg font-black text-slate-950">{metrics.unassignedTasks}</div>
               <div className="mt-1 text-sm text-slate-500">Atanmamis isler proje ritmini yavaslatir.</div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 px-4 py-4">
+              <div className="text-xs text-slate-400">Visibility</div>
+              <div className="mt-2 text-lg font-black text-slate-950">{visibilityMeta.label}</div>
+              <div className="mt-1 text-sm text-slate-500">{visibilityMeta.description}</div>
             </div>
             <div className="rounded-2xl bg-slate-50 px-4 py-4">
               <div className="text-xs text-slate-400">Recent blockers</div>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 require("dotenv/config");
 
 const bcrypt = require("bcryptjs");
@@ -279,6 +280,7 @@ async function seed() {
       color: "#2563eb",
       status: "ACTIVE",
       type: "WEBSITE",
+      visibility: "WORKSPACE",
       priority: "URGENT",
       tags: ["Launch", "Client", "Website"],
       ownerId: memberIndex.opsLead,
@@ -392,6 +394,7 @@ async function seed() {
       color: "#0f766e",
       status: "ACTIVE",
       type: "MOBILE_APP",
+      visibility: "MEMBERS",
       priority: "HIGH",
       tags: ["Pilot", "Mobile"],
       ownerId: memberIndex.deliveryManager,
@@ -480,6 +483,7 @@ async function seed() {
       color: "#ea580c",
       status: "ACTIVE",
       type: "RETAINER",
+      visibility: "LEADERSHIP",
       priority: "HIGH",
       tags: ["Retainer", "Reporting"],
       ownerId: memberIndex.opsLead,
@@ -559,6 +563,7 @@ async function seed() {
       color: "#7c3aed",
       status: "ON_HOLD",
       type: "INTERNAL",
+      visibility: "PRIVATE",
       priority: "MEDIUM",
       tags: ["Internal", "Operations"],
       ownerId: workspace.ownerId,
@@ -646,6 +651,7 @@ async function seed() {
           color: blueprint.color,
           status: blueprint.status,
           type: blueprint.type,
+          visibility: blueprint.visibility,
           priority: blueprint.priority,
           tags: blueprint.tags,
           startDate: blueprint.startDate,
@@ -673,6 +679,7 @@ async function seed() {
           color: blueprint.color,
           status: blueprint.status,
           type: blueprint.type,
+          visibility: blueprint.visibility,
           priority: blueprint.priority,
           tags: blueprint.tags,
           startDate: blueprint.startDate,

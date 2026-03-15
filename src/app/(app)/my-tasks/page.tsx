@@ -4,7 +4,6 @@ import { ArrowRight, CheckSquare, Clock3, FolderKanban, Target, TriangleAlert } 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PRIORITY_CONFIG, STATUS_CONFIG } from "@/types";
-import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 
 type MyTasksPageProps = {

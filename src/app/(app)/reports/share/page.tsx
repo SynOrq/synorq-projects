@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { ArrowLeft, CalendarRange, CheckCircle2, Gauge, Share2, TriangleAlert, Users } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { filterAccessibleProjects } from "@/lib/project-access";
 import { analyzeProjects, type PortfolioProject } from "@/lib/portfolio";
 import { buildExecutiveReport, buildShareableReportSummary } from "@/lib/reports";
 import { analyzeTeamCapacity } from "@/lib/team-capacity";
@@ -29,6 +30,8 @@ export default async function ShareableReportPage() {
   });
 
   if (!workspace) redirect("/auth/login");
+  const currentMembership = workspace.members.find((member) => member.user.id === userId);
+  if (!currentMembership) redirect("/auth/login");
 
   const [projectsRaw, activity] = await Promise.all([
     db.project.findMany({
@@ -78,14 +81,22 @@ export default async function ShareableReportPage() {
       select: {
         id: true,
         action: true,
+        projectId: true,
         createdAt: true,
       },
       orderBy: { createdAt: "desc" },
       take: 30,
     }),
   ]);
+  const accessibleProjectsRaw = filterAccessibleProjects(projectsRaw, {
+    userId,
+    workspaceOwnerId: workspace.ownerId,
+    workspaceRole: currentMembership.role,
+  });
+  const accessibleProjectIds = new Set(accessibleProjectsRaw.map((project) => project.id));
+  const filteredActivity = activity.filter((item) => !item.projectId || accessibleProjectIds.has(item.projectId));
 
-  const projects = analyzeProjects(projectsRaw as PortfolioProject[]);
+  const projects = analyzeProjects(accessibleProjectsRaw as PortfolioProject[]);
   const teamCapacity = analyzeTeamCapacity(
     workspace.members.map((member) => ({
       id: member.user.id,
@@ -95,7 +106,7 @@ export default async function ShareableReportPage() {
       role: member.role,
       isOwner: member.user.id === workspace.ownerId,
     })),
-    projectsRaw.flatMap((project) =>
+    accessibleProjectsRaw.flatMap((project) =>
       project.tasks.map((task) => ({
         id: task.id,
         title: task.title,
@@ -116,7 +127,7 @@ export default async function ShareableReportPage() {
     )
   );
 
-  const report = buildExecutiveReport(projects, teamCapacity.snapshots, activity);
+  const report = buildExecutiveReport(projects, teamCapacity.snapshots, filteredActivity);
   const summary = buildShareableReportSummary(report);
   const toneClass =
     summary.healthTone === "attention"

@@ -614,7 +614,7 @@ export default function SettingsConsole({
                     Team invite
                   </div>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Ilk surumde davet akisi mevcut kayitli kullaniciyi workspace'e ekler.
+                    Ilk surumde davet akisi mevcut kayitli kullaniciyi workspace&apos;e ekler.
                   </p>
 
                   <div className="mt-6 space-y-4">
@@ -872,7 +872,7 @@ export default function SettingsConsole({
                   <div className="mt-6 grid gap-3 sm:grid-cols-3">
                     <SnapshotCard label="Slack" value="Ready for policy" note="Action Required ve digest akisi icin aday kanal." />
                     <SnapshotCard label="Calendar" value="Timeline-aware" note="Due date ve milestone sync modeli hazir." />
-                    <SnapshotCard label="Webhooks" value="Event-driven" note="Audit ve activity event'leri hook katmanina uygun." />
+                    <SnapshotCard label="Webhooks" value="Event-driven" note="Audit ve activity event&apos;leri hook katmanina uygun." />
                   </div>
 
                   <div className="mt-6 space-y-3">
@@ -882,7 +882,7 @@ export default function SettingsConsole({
                         Event contract
                       </div>
                       <p className="mt-2 text-sm leading-6 text-slate-600">
-                        `project.updated`, `task.assignee_changed`, `risk.created` ve `export.created` event'leri entegrasyon
+                        `project.updated`, `task.assignee_changed`, `risk.created` ve `export.created` event&apos;leri entegrasyon
                         katmanina tasinabilecek normalized audit akisini olusturur.
                       </p>
                     </div>
@@ -932,7 +932,7 @@ export default function SettingsConsole({
                   </div>
                   <h2 className="mt-3 text-xl font-black text-slate-950">Seat, plan ve usage kontrol katmani</h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    v1'de faturalama akisi aktif degil; fakat owner/admin katmani icin seat governance, plan guardrail ve
+                    v1&apos;de faturalama akisi aktif degil; fakat owner/admin katmani icin seat governance, plan guardrail ve
                     usage okunurlugu bu yuzeyde modellenir.
                   </p>
 
@@ -1021,7 +1021,7 @@ export default function SettingsConsole({
                 <div className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
                   <div className="text-sm font-semibold text-white">Security posture</div>
                   <p className="mt-2 text-sm leading-6 text-slate-300">
-                    Synorq v1 guvenlik katmani auditability, role governance ve controlled workspace mutation pattern'i uzerine kuruludur.
+                    Synorq v1 guvenlik katmani auditability, role governance ve controlled workspace mutation pattern&apos;i uzerine kuruludur.
                   </p>
                   <ul className="mt-5 space-y-3 text-sm text-slate-200">
                     <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">

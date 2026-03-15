@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canAccessProject } from "@/lib/project-access";
 import { normalizeRiskPayload } from "@/lib/project-delivery";
 
 export async function POST(
@@ -10,6 +11,7 @@ export async function POST(
   try {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
+    const currentUserId = session.user.id;
 
     const { projectId } = await params;
     const body = await req.json();
@@ -17,14 +19,27 @@ export async function POST(
     if ("error" in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
     const project = await db.project.findFirst({
-      where: { id: projectId, workspace: { members: { some: { userId: session.user.id } } } },
+      where: { id: projectId, workspace: { members: { some: { userId: currentUserId } } } },
       include: {
-        workspace: { include: { members: { select: { userId: true } } } },
+        workspace: { include: { members: { select: { userId: true, role: true } } } },
         tasks: { select: { id: true } },
       },
     });
 
     if (!project) return NextResponse.json({ error: "Proje bulunamadi." }, { status: 404 });
+
+    const currentMembership = project.workspace.members.find((member) => member.userId === currentUserId);
+    if (
+      !currentMembership ||
+      !canAccessProject({
+        visibility: project.visibility,
+        workspaceRole: currentMembership.role,
+        isWorkspaceOwner: project.workspace.ownerId === currentUserId,
+        isProjectOwner: project.ownerId === currentUserId,
+      })
+    ) {
+      return NextResponse.json({ error: "Bu proje gorunurluk politikasiyla size acik degil." }, { status: 403 });
+    }
 
     const workspaceMemberIds = new Set(project.workspace.members.map((member) => member.userId));
     if (parsed.data.ownerId && !workspaceMemberIds.has(parsed.data.ownerId)) {
@@ -54,7 +69,7 @@ export async function POST(
       data: {
         workspaceId: project.workspaceId,
         projectId,
-        userId: session.user.id,
+        userId: currentUserId,
         action: "risk.created",
         metadata: { title: risk.title },
       },

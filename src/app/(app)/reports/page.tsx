@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AlertTriangle, ArrowRight, BarChart3, CalendarRange, CheckCircle2, Clock3, Gauge, Share2, TrendingUp, Users } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { filterAccessibleProjects } from "@/lib/project-access";
 import { analyzeProjects, type PortfolioProject } from "@/lib/portfolio";
 import { analyzeTeamCapacity } from "@/lib/team-capacity";
 import { buildExecutiveReport } from "@/lib/reports";
@@ -42,6 +43,8 @@ export default async function ReportsPage() {
   });
 
   if (!workspace) redirect("/auth/login");
+  const currentMembership = workspace.members.find((member) => member.user.id === userId);
+  if (!currentMembership) redirect("/auth/login");
 
   const [projectsRaw, activity] = await Promise.all([
     db.project.findMany({
@@ -96,14 +99,22 @@ export default async function ReportsPage() {
       select: {
         id: true,
         action: true,
+        projectId: true,
         createdAt: true,
       },
       orderBy: { createdAt: "desc" },
       take: 30,
     }),
   ]);
+  const accessibleProjectsRaw = filterAccessibleProjects(projectsRaw, {
+    userId,
+    workspaceOwnerId: workspace.ownerId,
+    workspaceRole: currentMembership.role,
+  });
+  const accessibleProjectIds = new Set(accessibleProjectsRaw.map((project) => project.id));
+  const filteredActivity = activity.filter((item) => !item.projectId || accessibleProjectIds.has(item.projectId));
 
-  const projects = analyzeProjects(projectsRaw as PortfolioProject[]);
+  const projects = analyzeProjects(accessibleProjectsRaw as PortfolioProject[]);
   const teamCapacity = analyzeTeamCapacity(
     workspace.members.map((member) => ({
       id: member.user.id,
@@ -113,7 +124,7 @@ export default async function ReportsPage() {
       role: member.role,
       isOwner: member.user.id === workspace.ownerId,
     })),
-    projectsRaw.flatMap((project) =>
+    accessibleProjectsRaw.flatMap((project) =>
       project.tasks.map((task) => ({
         id: task.id,
         title: task.title,
@@ -133,7 +144,7 @@ export default async function ReportsPage() {
       }))
     )
   );
-  const report = buildExecutiveReport(projects, teamCapacity.snapshots, activity);
+  const report = buildExecutiveReport(projects, teamCapacity.snapshots, filteredActivity);
 
   const summaryCards = [
     {
@@ -376,16 +387,6 @@ export default async function ReportsPage() {
           </div>
         </div>
       </section>
-    </div>
-  );
-}
-
-function MetricCard({ label, value, note }: { label: string; value: string | number; note: string }) {
-  return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-2 text-2xl font-black text-slate-950">{value}</div>
-      <div className="mt-2 text-sm leading-6 text-slate-500">{note}</div>
     </div>
   );
 }

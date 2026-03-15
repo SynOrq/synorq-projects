@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import type { Priority, ProjectStatus, ProjectType } from "@prisma/client";
+import type { Priority, ProjectStatus, ProjectType, ProjectVisibility } from "@prisma/client";
+import { VALID_PROJECT_VISIBILITY } from "@/lib/project-settings";
 
 const VALID_PROJECT_TYPES: ProjectType[] = ["WEBSITE", "MOBILE_APP", "RETAINER", "INTERNAL", "MAINTENANCE"];
 const VALID_PROJECT_STATUSES: ProjectStatus[] = ["ACTIVE", "ON_HOLD", "COMPLETED", "ARCHIVED"];
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
     const color = typeof body.color === "string" ? body.color : "#6366f1";
     const type = typeof body.type === "string" ? body.type.toUpperCase() : "INTERNAL";
     const status = typeof body.status === "string" ? body.status.toUpperCase() : "ACTIVE";
+    const visibility = typeof body.visibility === "string" ? body.visibility.toUpperCase() : "WORKSPACE";
     const priority = typeof body.priority === "string" ? body.priority.toUpperCase() : "MEDIUM";
     const ownerId = typeof body.ownerId === "string" ? body.ownerId : currentUserId;
     const clientId = typeof body.clientId === "string" && body.clientId.length > 0 ? body.clientId : null;
@@ -75,6 +77,9 @@ export async function POST(req: NextRequest) {
     }
     if (!VALID_PROJECT_STATUSES.includes(status as ProjectStatus)) {
       return NextResponse.json({ error: "Gecersiz proje durumu." }, { status: 400 });
+    }
+    if (!VALID_PROJECT_VISIBILITY.includes(visibility as ProjectVisibility)) {
+      return NextResponse.json({ error: "Gecersiz proje gorunurluk seviyesi." }, { status: 400 });
     }
     if (!VALID_PRIORITIES.includes(priority as Priority)) {
       return NextResponse.json({ error: "Gecersiz proje onceligi." }, { status: 400 });
@@ -109,6 +114,7 @@ export async function POST(req: NextRequest) {
         color,
         status: status as ProjectStatus,
         type: type as ProjectType,
+        visibility: visibility as ProjectVisibility,
         priority: priority as Priority,
         tags,
         startDate,
@@ -160,6 +166,7 @@ export async function POST(req: NextRequest) {
           clientName: client?.name ?? null,
           ownerId,
           type,
+          visibility,
           priority,
         },
       },

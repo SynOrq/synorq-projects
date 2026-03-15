@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Settings2, ShieldCheck } from "lucide-react";
+import { Eye, Settings2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PROJECT_VISIBILITY_OPTIONS } from "@/lib/project-access";
 
 type SelectOption = {
   value: string;
@@ -18,6 +19,7 @@ type Props = {
     color: string;
     status: string;
     type: string;
+    visibility: string;
     priority: string;
     startDate: Date | null;
     dueDate: Date | null;
@@ -63,6 +65,7 @@ export default function ProjectSettingsPanel({ project, ownerOptions, clientOpti
   const [color, setColor] = useState(project.color);
   const [status, setStatus] = useState(project.status);
   const [type, setType] = useState(project.type);
+  const [visibility, setVisibility] = useState(project.visibility);
   const [priority, setPriority] = useState(project.priority);
   const [ownerId, setOwnerId] = useState(project.ownerId ?? "");
   const [clientId, setClientId] = useState(project.clientId ?? "");
@@ -88,6 +91,7 @@ export default function ProjectSettingsPanel({ project, ownerOptions, clientOpti
             color,
             status,
             type,
+            visibility,
             priority,
             ownerId,
             clientId,
@@ -110,6 +114,7 @@ export default function ProjectSettingsPanel({ project, ownerOptions, clientOpti
         setColor(data.project.color);
         setStatus(data.project.status);
         setType(data.project.type);
+        setVisibility(data.project.visibility);
         setPriority(data.project.priority);
         setOwnerId(data.project.ownerId ?? "");
         setClientId(data.project.clientId ?? "");
@@ -141,6 +146,7 @@ export default function ProjectSettingsPanel({ project, ownerOptions, clientOpti
           <Field label="Color" value={color} onChange={setColor} disabled={isPending} />
           <SelectField label="Status" value={status} onChange={setStatus} options={statusOptions} disabled={isPending} />
           <SelectField label="Type" value={type} onChange={setType} options={typeOptions} disabled={isPending} />
+          <SelectField label="Visibility" value={visibility} onChange={setVisibility} options={PROJECT_VISIBILITY_OPTIONS} disabled={isPending} />
           <SelectField label="Priority" value={priority} onChange={setPriority} options={priorityOptions} disabled={isPending} />
           <SelectField label="Owner" value={ownerId} onChange={setOwnerId} options={ownerOptions} disabled={isPending} />
           <SelectField label="Client" value={clientId} onChange={setClientId} options={clientOptions} disabled={isPending} />
@@ -170,6 +176,7 @@ export default function ProjectSettingsPanel({ project, ownerOptions, clientOpti
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <MetricCard label="Current status" value={statusOptions.find((item) => item.value === status)?.label ?? status} note="Delivery posture" />
             <MetricCard label="Priority" value={priorityOptions.find((item) => item.value === priority)?.label ?? priority} note="Execution pressure" />
+            <MetricCard label="Visibility" value={PROJECT_VISIBILITY_OPTIONS.find((item) => item.value === visibility)?.label ?? visibility} note="Read access strategy" />
             <MetricCard label="Client binding" value={clientOptions.find((item) => item.value === clientId)?.label ?? "Internal"} note="Commercial context" />
             <MetricCard label="Ownership" value={ownerOptions.find((item) => item.value === ownerId)?.label ?? "Unassigned"} note="Single accountable owner" />
           </div>
@@ -183,8 +190,28 @@ export default function ProjectSettingsPanel({ project, ownerOptions, clientOpti
           <ul className="mt-5 space-y-3 text-sm text-slate-200">
             <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Owner ve client degisikligi audit timeline icine duser.</li>
             <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Status ve priority delivery risk sinyallerini dogrudan etkiler.</li>
+            <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Visibility policy viewer, member ve leadership access patikalarini netlestirir.</li>
             <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Timeline alanlari dashboard ve report yuzeyleriyle ayni veri modelini kullanir.</li>
           </ul>
+        </div>
+        <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+            <Eye size={18} className="text-cyan-600" />
+            Visibility notes
+          </div>
+          <div className="mt-4 space-y-3">
+            {PROJECT_VISIBILITY_OPTIONS.map((option) => (
+              <div
+                key={option.value}
+                className={`rounded-2xl border px-4 py-4 ${
+                  option.value === visibility ? "border-indigo-200 bg-indigo-50" : "border-slate-200 bg-slate-50"
+                }`}
+              >
+                <div className="text-sm font-semibold text-slate-950">{option.label}</div>
+                <div className="mt-1 text-sm leading-6 text-slate-600">{option.description}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </div>

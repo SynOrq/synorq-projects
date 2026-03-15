@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2, Eye, FolderKanban, Gauge, Rocket, Settings, U
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { buildDemoWorkspaceState, buildOnboardingChecklist } from "@/lib/onboarding";
+import { filterAccessibleProjects } from "@/lib/project-access";
 import { analyzeProjects, type PortfolioProject } from "@/lib/portfolio";
 import { normalizeSavedProjectsView } from "@/lib/projects-saved-view";
 import { findWorkspaceState } from "@/lib/workspace-state";
@@ -19,10 +20,18 @@ export default async function OnboardingPage() {
     where: { members: { some: { userId } } },
     include: {
       _count: { select: { members: true, projects: true } },
+      members: {
+        select: {
+          userId: true,
+          role: true,
+        },
+      },
     },
   });
 
   if (!workspace) redirect("/auth/login");
+  const currentMembership = workspace.members.find((member) => member.userId === userId);
+  if (!currentMembership) redirect("/auth/login");
 
   const [taskCount, workspaceState, activityCount, projectsRaw] = await Promise.all([
     db.task.count({
@@ -81,10 +90,16 @@ export default async function OnboardingPage() {
     }),
   ]);
 
-  const analyzedProjects = analyzeProjects(projectsRaw as PortfolioProject[]);
+  const accessibleProjectsRaw = filterAccessibleProjects(projectsRaw, {
+    userId,
+    workspaceOwnerId: workspace.ownerId,
+    workspaceRole: currentMembership.role,
+  });
+  const accessibleProjectCount = accessibleProjectsRaw.length;
+  const analyzedProjects = analyzeProjects(accessibleProjectsRaw as PortfolioProject[]);
   const demoState = buildDemoWorkspaceState({
     workspaceName: workspace.name,
-    projectCount: workspace._count.projects,
+    projectCount: accessibleProjectCount,
     memberCount: workspace._count.members,
     taskCount,
     activityCount,
@@ -102,10 +117,10 @@ export default async function OnboardingPage() {
     hasProfileIdentity: Boolean(session.user.name) && Boolean(session.user.image),
     hasWorkspace: true,
     hasWorkspaceBrand: Boolean(workspace.logoUrl),
-    projectCount: workspace._count.projects,
+    projectCount: accessibleProjectCount,
     memberCount: workspace._count.members,
     taskCount,
-    reportsReady: workspace._count.projects > 0,
+    reportsReady: accessibleProjectCount > 0,
     weeklyDigestEnabled: workspaceState?.weeklyDigestEnabled ?? false,
     hasSavedProjectView: Boolean(normalizeSavedProjectsView(workspaceState?.savedProjectsView ?? null).data),
   });
@@ -151,7 +166,7 @@ export default async function OnboardingPage() {
                 Synorq execution OS kurulumunu adim adim tamamlayin.
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-                Bu yuzey, workspace markasi, ekip setup'i, proje akisi ve reporting posture'unu tek setup hub icinde toplar.
+                Bu yuzey, workspace markasi, ekip setup&apos;i, proje akisi ve reporting posture&apos;unu tek setup hub icinde toplar.
               </p>
             </div>
 
@@ -302,7 +317,7 @@ export default async function OnboardingPage() {
             <div className="text-lg font-black text-slate-950">Workspace readiness</div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <ReadinessCard label="Logo" value={workspace.logoUrl ? "Hazir" : "Eksik"} note="Workspace branding" />
-              <ReadinessCard label="Projects" value={String(workspace._count.projects)} note="aktif proje kaydi" />
+              <ReadinessCard label="Projects" value={String(accessibleProjectCount)} note="gorunebilen proje kaydi" />
               <ReadinessCard label="Members" value={String(workspace._count.members)} note="workspace seat" />
               <ReadinessCard label="Tasks" value={String(taskCount)} note="execution backlog" />
               <ReadinessCard label="Activity" value={String(activityCount)} note="audit + collaboration" />

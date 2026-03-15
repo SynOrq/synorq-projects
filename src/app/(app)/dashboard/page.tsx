@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { filterAccessibleProjects } from "@/lib/project-access";
 import {
   buildClientRiskVisibility,
   buildQuickActions,
@@ -84,6 +85,8 @@ export default async function DashboardPage() {
   });
 
   if (!workspace) redirect("/auth/login");
+  const currentMembership = workspace.members.find((member) => member.user.id === userId);
+  if (!currentMembership) redirect("/auth/login");
 
   const [projectsRaw, recentActivity, myTasks] = await Promise.all([
     db.project.findMany({
@@ -153,10 +156,18 @@ export default async function DashboardPage() {
       take: 5,
     }),
   ]);
+  const accessibleProjectsRaw = filterAccessibleProjects(projectsRaw, {
+    userId,
+    workspaceOwnerId: workspace.ownerId,
+    workspaceRole: currentMembership.role,
+  });
+  const accessibleProjectIds = new Set(accessibleProjectsRaw.map((project) => project.id));
+  const visibleRecentActivity = recentActivity.filter((item) => !item.project || accessibleProjectIds.has(item.project.id));
+  const visibleMyTasks = myTasks.filter((task) => accessibleProjectIds.has(task.project.id));
 
   const now = new Date();
   const firstName = session.user.name?.split(" ")[0] ?? "Kullanici";
-  const projects = analyzeProjects(projectsRaw as PortfolioProject[], now);
+  const projects = analyzeProjects(accessibleProjectsRaw as PortfolioProject[], now);
   const allTasks = projects.flatMap((project) =>
     project.tasks.map((task) => ({
       ...task,
@@ -292,7 +303,7 @@ export default async function DashboardPage() {
               </div>
               <div className="rounded-[24px] border border-slate-200 bg-white/80 px-4 py-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Benim odagim</div>
-                <div className="mt-2 text-xl font-black text-slate-950">{myTasks.length}</div>
+                <div className="mt-2 text-xl font-black text-slate-950">{visibleMyTasks.length}</div>
                 <div className="mt-1 text-xs text-slate-500">bana atanmis aktif gorev</div>
               </div>
               <div className="rounded-[24px] border border-slate-200 bg-white/80 px-4 py-4">
@@ -562,13 +573,13 @@ export default async function DashboardPage() {
           <div className="mt-6 rounded-[28px] border border-slate-200 bg-slate-50 p-4">
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">My Focus</div>
             <div className="mt-4 space-y-3">
-              {myTasks.length === 0 && (
+              {visibleMyTasks.length === 0 && (
                 <div className="rounded-2xl bg-white px-4 py-6 text-sm text-slate-500">
                   Uzerinize atanmis aktif gorev bulunmuyor.
                 </div>
               )}
 
-              {myTasks.map((task) => (
+              {visibleMyTasks.map((task) => (
                 <Link key={task.id} href={`/projects/${task.project.id}`} className="block rounded-2xl bg-white px-4 py-3 transition hover:bg-slate-100">
                   <div className="truncate text-sm font-semibold text-slate-900">{task.title}</div>
                   <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500">
@@ -711,13 +722,13 @@ export default async function DashboardPage() {
           </div>
 
           <div className="mt-6 space-y-3">
-            {recentActivity.length === 0 && (
+            {visibleRecentActivity.length === 0 && (
               <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
                 Henuz hareket kaydi yok.
               </div>
             )}
 
-            {recentActivity.map((item) => (
+            {visibleRecentActivity.map((item) => (
               <div key={item.id} className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>

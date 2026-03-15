@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canAccessProject } from "@/lib/project-access";
 import { normalizeProjectUpdatePayload } from "@/lib/project-settings";
 
 export async function PATCH(
@@ -12,6 +13,7 @@ export async function PATCH(
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
     }
+    const currentUserId = session.user.id;
 
     const { projectId } = await params;
     const body = await req.json();
@@ -23,12 +25,12 @@ export async function PATCH(
     const project = await db.project.findFirst({
       where: {
         id: projectId,
-        workspace: { members: { some: { userId: session.user.id } } },
+        workspace: { members: { some: { userId: currentUserId } } },
       },
       include: {
         workspace: {
           include: {
-            members: { select: { userId: true } },
+            members: { select: { userId: true, role: true } },
           },
         },
       },
@@ -36,6 +38,19 @@ export async function PATCH(
 
     if (!project) {
       return NextResponse.json({ error: "Proje bulunamadi." }, { status: 404 });
+    }
+
+    const currentMembership = project.workspace.members.find((member) => member.userId === currentUserId);
+    if (
+      !currentMembership ||
+      !canAccessProject({
+        visibility: project.visibility,
+        workspaceRole: currentMembership.role,
+        isWorkspaceOwner: project.workspace.ownerId === currentUserId,
+        isProjectOwner: project.ownerId === currentUserId,
+      })
+    ) {
+      return NextResponse.json({ error: "Bu proje gorunurluk politikasiyla size acik degil." }, { status: 403 });
     }
 
     const workspaceMemberIds = new Set(project.workspace.members.map((member) => member.userId));
@@ -70,7 +85,7 @@ export async function PATCH(
       data: {
         workspaceId: project.workspaceId,
         projectId: project.id,
-        userId: session.user.id,
+        userId: currentUserId,
         action: "project.updated",
         metadata: {
           projectId: project.id,
@@ -78,6 +93,7 @@ export async function PATCH(
           ownerId: updatedProject.ownerId,
           clientName: updatedProject.client?.name ?? null,
           type: updatedProject.type,
+          visibility: updatedProject.visibility,
           priority: updatedProject.priority,
           status: updatedProject.status,
         },

@@ -140,6 +140,7 @@ model Project {
   color       String        @default("#6366f1")
   status      ProjectStatus @default(ACTIVE)
   type        ProjectType   @default(INTERNAL)
+  visibility  ProjectVisibility @default(WORKSPACE)
   priority    Priority      @default(MEDIUM)
   tags        String[]      @default([])
   startDate   DateTime?
@@ -155,6 +156,13 @@ model Project {
   milestones   Milestone[]
   risks        Risk[]
   activityLogs ActivityLog[]
+}
+
+enum ProjectVisibility {
+  WORKSPACE
+  MEMBERS
+  LEADERSHIP
+  PRIVATE
 }
 
 enum ProjectStatus {

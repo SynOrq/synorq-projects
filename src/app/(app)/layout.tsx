@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { buildOnboardingChecklist } from "@/lib/onboarding";
+import { filterAccessibleProjects } from "@/lib/project-access";
 import { normalizeSavedProjectsView } from "@/lib/projects-saved-view";
 import { formatRelative } from "@/lib/utils";
 import { findWorkspaceState } from "@/lib/workspace-state";
@@ -40,13 +41,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     },
   });
 
-  const projects = workspace
+  const projectsRaw = workspace
     ? await db.project.findMany({
         where: { workspaceId: workspace.id, status: { not: "ARCHIVED" } },
-        select: { id: true, name: true, color: true },
+        select: { id: true, name: true, color: true, ownerId: true, visibility: true },
         orderBy: { createdAt: "asc" },
       })
     : [];
+  const currentMembership = workspace?.members.find((member) => member.user.id === userId) ?? null;
+  const projects =
+    workspace && currentMembership
+      ? filterAccessibleProjects(projectsRaw, {
+          userId,
+          workspaceOwnerId: workspace.ownerId,
+          workspaceRole: currentMembership.role,
+        })
+      : [];
+  const accessibleProjectIds = new Set(projects.map((project) => project.id));
 
   const [taskCount, overdueTasks, activity] = workspace
     ? await Promise.all([
@@ -99,6 +110,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         take: 6,
       })
     : [];
+  const visibleOverdueTasks = overdueTasks.filter((task) => accessibleProjectIds.has(task.project.id));
+  const visibleActivity = activity.filter((item) => !item.project || accessibleProjectIds.has(item.project.id));
+  const visibleFocusTasks = focusTasks.filter((task) => accessibleProjectIds.has(task.project.id));
   const workspaceState = workspace
     ? await findWorkspaceState({
         workspaceId: workspace.id,
@@ -110,14 +124,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     : null;
 
   const now = new Date();
-  const overdueCount = overdueTasks.filter((task) => task.dueDate && new Date(task.dueDate) < now).length;
+  const overdueCount = visibleOverdueTasks.filter((task) => task.dueDate && new Date(task.dueDate) < now).length;
   const notificationsReadAt = workspaceState?.notificationsReadAt ?? null;
   const riskAlertsEnabled = workspaceState?.riskAlertsEnabled ?? true;
   const activityAlertsEnabled = workspaceState?.activityAlertsEnabled ?? true;
 
   const alerts = [
     ...(riskAlertsEnabled
-      ? overdueTasks
+      ? visibleOverdueTasks
       .filter((task) => task.dueDate && new Date(task.dueDate) < now)
       .map((task) => ({
         id: `risk-${task.id}`,
@@ -129,7 +143,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       }))
       : []),
     ...(activityAlertsEnabled
-      ? activity.map((item) => ({
+      ? visibleActivity.map((item) => ({
       id: `activity-${item.id}`,
       title: item.project?.name ?? "Workspace aktivitesi",
       detail: `${item.user.name ?? item.user.email} • ${item.action} • ${formatRelative(item.createdAt)}`,
@@ -165,7 +179,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             unreadAlertCount={unreadAlertCount}
             alerts={alerts}
             commandProjects={projects}
-            commandTasks={focusTasks.map((task) => ({
+            commandTasks={visibleFocusTasks.map((task) => ({
               id: task.id,
               title: task.title,
               href: `/projects/${task.project.id}`,

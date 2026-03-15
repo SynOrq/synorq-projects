@@ -1,6 +1,7 @@
 type ProjectStatus = "ACTIVE" | "ON_HOLD" | "COMPLETED" | "ARCHIVED";
 type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "CANCELLED";
 type ProjectType = "WEBSITE" | "MOBILE_APP" | "RETAINER" | "INTERNAL" | "MAINTENANCE";
+type ProjectVisibility = "WORKSPACE" | "MEMBERS" | "LEADERSHIP" | "PRIVATE";
 type MilestoneStatus = "PLANNED" | "IN_PROGRESS" | "AT_RISK" | "COMPLETED";
 type RiskStatus = "OPEN" | "MITIGATING" | "WATCH" | "CLOSED";
 type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
@@ -25,6 +26,7 @@ export type PortfolioProject = {
   color: string;
   status: ProjectStatus;
   type: ProjectType;
+  visibility: ProjectVisibility;
   priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
   tags: string[];
   startDate: Date | null;

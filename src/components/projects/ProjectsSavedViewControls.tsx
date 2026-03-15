@@ -46,7 +46,7 @@ export default function ProjectsSavedViewControls({ currentView, savedView }: Pr
     <div className="flex flex-wrap items-center gap-2">
       <Button type="button" size="sm" variant="outline" loading={isPending} onClick={() => updateSavedView(currentView, "Current view kaydedildi.")}>
         <Bookmark size={14} />
-        Bu view'u kaydet
+        Bu view&apos;u kaydet
       </Button>
       {savedView && (
         <Button type="button" size="sm" variant="ghost" loading={isPending} onClick={() => updateSavedView(null, "Saved view temizlendi.")}>

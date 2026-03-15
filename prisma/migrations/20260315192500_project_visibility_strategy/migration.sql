@@ -1,0 +1,4 @@
+CREATE TYPE "ProjectVisibility" AS ENUM ('WORKSPACE', 'MEMBERS', 'LEADERSHIP', 'PRIVATE');
+
+ALTER TABLE "Project"
+ADD COLUMN "visibility" "ProjectVisibility" NOT NULL DEFAULT 'WORKSPACE';

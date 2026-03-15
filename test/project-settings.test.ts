@@ -9,6 +9,7 @@ test("normalizeProjectUpdatePayload parses valid project settings payload", () =
     color: "#0f172a",
     status: "active",
     type: "website",
+    visibility: "leadership",
     priority: "high",
     ownerId: "user_1",
     clientId: "client_1",
@@ -24,6 +25,7 @@ test("normalizeProjectUpdatePayload parses valid project settings payload", () =
   assert.equal(result.data.description, "Delivery cleanup");
   assert.equal(result.data.status, "ACTIVE");
   assert.equal(result.data.type, "WEBSITE");
+  assert.equal(result.data.visibility, "LEADERSHIP");
   assert.equal(result.data.priority, "HIGH");
   assert.equal(result.data.ownerId, "user_1");
   assert.equal(result.data.clientId, "client_1");
@@ -33,6 +35,7 @@ test("normalizeProjectUpdatePayload parses valid project settings payload", () =
 test("normalizeProjectUpdatePayload rejects invalid enum and date values", () => {
   assert.equal(normalizeProjectUpdatePayload({ name: "Test", status: "broken" }).error, "Gecersiz proje durumu.");
   assert.equal(normalizeProjectUpdatePayload({ name: "Test", type: "broken" }).error, "Gecersiz proje tipi.");
+  assert.equal(normalizeProjectUpdatePayload({ name: "Test", visibility: "broken" }).error, "Gecersiz proje gorunurluk seviyesi.");
   assert.equal(normalizeProjectUpdatePayload({ name: "Test", priority: "broken" }).error, "Gecersiz proje onceligi.");
   assert.equal(normalizeProjectUpdatePayload({ name: "Test", startDate: "broken-date" }).error, "Gecersiz baslangic tarihi.");
   assert.equal(normalizeProjectUpdatePayload({ name: "Test", dueDate: "broken-date" }).error, "Gecersiz hedef teslim tarihi.");

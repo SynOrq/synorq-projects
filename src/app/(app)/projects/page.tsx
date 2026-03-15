@@ -9,7 +9,6 @@ import {
   FolderKanban,
   LayoutGrid,
   ListFilter,
-  PauseCircle,
   Plus,
   Search,
   TableProperties,
@@ -18,6 +17,7 @@ import {
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { filterAccessibleProjects } from "@/lib/project-access";
 import { analyzeProjects, type PortfolioProject } from "@/lib/portfolio";
 import {
   buildOwnerDistribution,
@@ -60,10 +60,11 @@ function buildQuery(params: Record<string, string | undefined>) {
 export default async function ProjectsPage({ searchParams }: ProjectsPageProps) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/login");
+  const userId = session.user.id;
 
   const filters = await searchParams;
   const workspace = await db.workspace.findFirst({
-    where: { members: { some: { userId: session.user.id } } },
+    where: { members: { some: { userId } } },
     include: {
       owner: { select: { id: true, name: true, email: true } },
       members: {
@@ -75,6 +76,8 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
   });
 
   if (!workspace) redirect("/auth/login");
+  const currentMembership = workspace.members.find((member) => member.user.id === userId);
+  if (!currentMembership) redirect("/auth/login");
 
   const workspaceState = await findWorkspaceState({
     workspaceId: workspace.id,
@@ -132,6 +135,11 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
     },
     orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
   });
+  const accessibleProjectsRaw = filterAccessibleProjects(projectsRaw, {
+    userId,
+    workspaceOwnerId: workspace.ownerId,
+    workspaceRole: currentMembership.role,
+  });
 
   const resolvedFilters = resolveProjectFilters(filters ?? {}, savedView);
   const query = resolvedFilters.q.toLowerCase();
@@ -144,7 +152,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
     health: selectedHealth,
     view: selectedView,
   });
-  const analyzedProjects = analyzeProjects(projectsRaw as PortfolioProject[]);
+  const analyzedProjects = analyzeProjects(accessibleProjectsRaw as PortfolioProject[]);
 
   const filteredProjects = analyzedProjects.filter((project) => {
     const matchesQuery =
@@ -234,7 +242,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
       role: member.role,
       isOwner: member.user.id === workspace.ownerId,
     })),
-    projectsRaw.flatMap((project) =>
+    accessibleProjectsRaw.flatMap((project) =>
       project.tasks.map((task) => ({
         id: task.id,
         title: task.title,

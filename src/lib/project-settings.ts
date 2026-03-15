@@ -1,8 +1,9 @@
-import type { Priority, ProjectStatus, ProjectType } from "@prisma/client";
+import type { Priority, ProjectStatus, ProjectType, ProjectVisibility } from "@prisma/client";
 
 export const VALID_PROJECT_TYPES: ProjectType[] = ["WEBSITE", "MOBILE_APP", "RETAINER", "INTERNAL", "MAINTENANCE"];
 export const VALID_PROJECT_STATUSES: ProjectStatus[] = ["ACTIVE", "ON_HOLD", "COMPLETED", "ARCHIVED"];
 export const VALID_PRIORITIES: Priority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+export const VALID_PROJECT_VISIBILITY: ProjectVisibility[] = ["WORKSPACE", "MEMBERS", "LEADERSHIP", "PRIVATE"];
 
 function normalizeText(value: unknown) {
   if (typeof value !== "string") return null;
@@ -39,6 +40,11 @@ export function normalizeProjectUpdatePayload(body: Record<string, unknown>) {
     return { error: "Gecersiz proje onceligi." } as const;
   }
 
+  const visibility = typeof body.visibility === "string" ? body.visibility.toUpperCase() : "WORKSPACE";
+  if (!VALID_PROJECT_VISIBILITY.includes(visibility as ProjectVisibility)) {
+    return { error: "Gecersiz proje gorunurluk seviyesi." } as const;
+  }
+
   const startDate = normalizeDate(body.startDate);
   if (typeof body.startDate !== "undefined" && typeof startDate === "undefined") {
     return { error: "Gecersiz baslangic tarihi." } as const;
@@ -63,6 +69,7 @@ export function normalizeProjectUpdatePayload(body: Record<string, unknown>) {
       color: typeof body.color === "string" && body.color.trim() ? body.color : "#6366f1",
       status: status as ProjectStatus,
       type: type as ProjectType,
+      visibility: visibility as ProjectVisibility,
       priority: priority as Priority,
       startDate,
       dueDate,
