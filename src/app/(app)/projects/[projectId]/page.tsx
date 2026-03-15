@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { buildProjectAISummary } from "@/lib/ai-summaries";
 import { canAccessProject } from "@/lib/project-access";
 import { analyzeProjects, analyzeTeamLoad, type PortfolioProject } from "@/lib/portfolio";
 import { taskCardInclude } from "@/lib/task-detail";
@@ -318,6 +319,37 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
       }))
     )
     .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+  const aiSummary = buildProjectAISummary({
+    project: {
+      name: project.name,
+      status: project.status,
+      type: project.type,
+      priority: project.priority,
+      dueDate: analyzedProject.dueDateResolved,
+      client: project.client
+        ? {
+            name: project.client.name,
+            health: project.client.health,
+          }
+        : null,
+    },
+    health: analyzedProject.health,
+    metrics: {
+      openTasks: analyzedProject.openTasks,
+      completedTasks: analyzedProject.completedTasks,
+      overdueTasks: analyzedProject.overdueTasks,
+      dueThisWeekTasks: analyzedProject.dueThisWeekTasks,
+      unassignedTasks: analyzedProject.unassignedTasks,
+      completionRate: analyzedProject.completionRate,
+    },
+    teamLoad,
+    risks: risks.map((risk) => ({
+      id: risk.id,
+      title: risk.title,
+      severity: risk.severity,
+      status: risk.status,
+    })),
+  });
 
   return (
     <div className="flex h-full flex-col">
@@ -393,6 +425,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
           activity={activity}
           risks={risks}
           files={files}
+          aiSummary={aiSummary}
           ownerOptions={ownerOptions}
           clientOptions={clientOptions}
           taskOptions={taskOptions}

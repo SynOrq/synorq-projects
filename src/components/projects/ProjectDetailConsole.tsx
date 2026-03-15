@@ -160,6 +160,13 @@ type Props = {
     taskTitle: string;
     sectionName: string | null;
   }>;
+  aiSummary: {
+    tone: "attention" | "watch" | "stable";
+    headline: string;
+    narrative: string[];
+    focusAreas: Array<{ id: string; title: string; detail: string }>;
+    nextActions: string[];
+  };
   ownerOptions: Array<{ value: string; label: string }>;
   clientOptions: Array<{ value: string; label: string }>;
   taskOptions: Array<{ value: string; label: string }>;
@@ -185,6 +192,7 @@ export default function ProjectDetailConsole({
   activity,
   risks,
   files,
+  aiSummary,
   ownerOptions,
   clientOptions,
   taskOptions,
@@ -197,6 +205,8 @@ export default function ProjectDetailConsole({
     .filter((item) => item.key !== "baseline")
     .sort((left, right) => Math.abs(right.impact) - Math.abs(left.impact))
     .slice(0, 3);
+  const aiToneBadge =
+    aiSummary.tone === "attention" ? "danger" : aiSummary.tone === "watch" ? "warning" : "success";
 
   if (currentTab === "board") {
     return (
@@ -610,6 +620,50 @@ export default function ProjectDetailConsole({
                   </div>
                 </div>
               ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">AI-assisted summary</div>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">{aiSummary.headline}</h2>
+            </div>
+            <Badge variant={aiToneBadge}>{aiSummary.tone}</Badge>
+          </div>
+          <div className="mt-5 space-y-3">
+            {aiSummary.narrative.map((item) => (
+              <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-600">
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-lg font-semibold text-slate-900">Focus areas</div>
+            <div className="mt-5 space-y-3">
+              {aiSummary.focusAreas.map((item) => (
+                <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <div className="text-sm font-semibold text-slate-900">{item.title}</div>
+                  <div className="mt-2 text-sm text-slate-600">{item.detail}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+            <div className="text-sm font-semibold text-white">Recommended next moves</div>
+            <div className="mt-4 space-y-3">
+              {aiSummary.nextActions.map((item) => (
+                <div key={item} className="rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-200">
+                  {item}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

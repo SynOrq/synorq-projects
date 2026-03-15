@@ -70,6 +70,7 @@ export function getActivitySeverity(action: string, metadataValue: unknown): Act
   if (action === "workspace.preference_changed") return "info";
   if (action === "workspace.billing_updated") return "info";
   if (action === "workspace.integration_updated") return "info";
+  if (action === "workspace.automation_created" || action === "workspace.automation_updated") return "info";
   if (action === "export.created") return "info";
   if (action.startsWith("client.portal")) return "info";
   if (action === "task.moved" || action === "task.updated" || action === "project.created") return "info";
@@ -84,6 +85,8 @@ export function getActivityTitle(action: string) {
     "workspace.preference_changed": "Bildirim tercihleri guncellendi",
     "workspace.billing_updated": "Billing ayarlari guncellendi",
     "workspace.integration_updated": "Integration ayarlari guncellendi",
+    "workspace.automation_created": "Automation akisi olusturuldu",
+    "workspace.automation_updated": "Automation akisi guncellendi",
     "export.created": "Export olusturuldu",
     "client.portal_published": "Client portal yayinlandi",
     "client.portal_updated": "Client portal guncellendi",
@@ -132,6 +135,10 @@ export function getActivityDetail(params: {
       return `${params.actorName} billing planini ${metadata?.plan ?? "guncel"} seviyesine aldi ve usage guardrail ayarlarini kaydetti.`;
     case "workspace.integration_updated":
       return `${params.actorName} ${metadata?.name ?? "integration"} baglantisini ${metadata?.status ?? "guncel"} duruma getirdi.`;
+    case "workspace.automation_created":
+      return `${params.actorName} ${metadata?.name ?? "automation"} akisini ${metadata?.status ?? "draft"} durumda olusturdu.`;
+    case "workspace.automation_updated":
+      return `${params.actorName} ${metadata?.name ?? "automation"} akisini ${metadata?.status ?? "guncel"} olarak kaydetti.`;
     case "export.created":
       return `${params.actorName} filtrelenmis timeline verisini disa aktardi.`;
     case "client.portal_published":

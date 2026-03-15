@@ -23,6 +23,12 @@ import {
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
+  summarizeWorkspaceAutomations,
+  WORKSPACE_AUTOMATION_ACTION_OPTIONS,
+  WORKSPACE_AUTOMATION_STATUS_OPTIONS,
+  WORKSPACE_AUTOMATION_TRIGGER_OPTIONS,
+} from "@/lib/automations";
+import {
   buildWorkspaceBillingSummary,
   WORKSPACE_BILLING_STATUS_OPTIONS,
   WORKSPACE_PLAN_OPTIONS,
@@ -95,6 +101,18 @@ type Props = {
     config: Record<string, unknown> | null;
     lastSyncedAt: Date | string | null;
   }>;
+  initialAutomations: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    trigger: "TASK_OVERDUE" | "RISK_CREATED" | "MILESTONE_AT_RISK" | "WEEKLY_DIGEST_READY";
+    action: "SLACK_MESSAGE" | "WEBHOOK" | "CREATE_TASK";
+    status: "DRAFT" | "ACTIVE" | "PAUSED";
+    targetProjectId: string | null;
+    config: Record<string, unknown> | null;
+    lastRunAt: Date | string | null;
+  }>;
+  automationProjectOptions: Array<{ value: string; label: string }>;
   initialMembers: MemberRecord[];
   currentUserId: string;
   currentAccess: {
@@ -169,6 +187,8 @@ export default function SettingsConsole({
   initialBilling,
   usageTelemetry,
   initialIntegrations,
+  initialAutomations,
+  automationProjectOptions,
   initialMembers,
   currentUserId,
   currentAccess,
@@ -241,6 +261,15 @@ export default function SettingsConsole({
 
     return base;
   });
+  const [automations, setAutomations] = useState(
+    initialAutomations.map((automation) => ({
+      ...automation,
+      description: automation.description ?? "",
+      targetProjectId: automation.targetProjectId ?? "",
+      config: automation.config ?? {},
+      lastRunAt: automation.lastRunAt ? new Date(automation.lastRunAt).toISOString().slice(0, 10) : "",
+    }))
+  );
   const [members, setMembers] = useState(initialMembers);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<MemberRecord["role"]>("MEMBER");
@@ -250,20 +279,24 @@ export default function SettingsConsole({
   const [teamMessage, setTeamMessage] = useState<string | null>(null);
   const [billingMessage, setBillingMessage] = useState<string | null>(null);
   const [integrationMessage, setIntegrationMessage] = useState<string | null>(null);
+  const [automationMessage, setAutomationMessage] = useState<string | null>(null);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [preferencesError, setPreferencesError] = useState<string | null>(null);
   const [teamError, setTeamError] = useState<string | null>(null);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [integrationError, setIntegrationError] = useState<string | null>(null);
+  const [automationError, setAutomationError] = useState<string | null>(null);
   const [isWorkspacePending, startWorkspaceTransition] = useTransition();
   const [isProfilePending, startProfileTransition] = useTransition();
   const [isPreferencesPending, startPreferencesTransition] = useTransition();
   const [isBillingPending, startBillingTransition] = useTransition();
   const [isIntegrationPending, startIntegrationTransition] = useTransition();
+  const [isAutomationPending, startAutomationTransition] = useTransition();
   const [isInvitePending, startInviteTransition] = useTransition();
   const [savingMemberId, setSavingMemberId] = useState<string | null>(null);
   const [savingIntegrationProvider, setSavingIntegrationProvider] = useState<string | null>(null);
+  const [savingAutomationId, setSavingAutomationId] = useState<string | null>(null);
 
   const teamSummary = useMemo(() => {
     const admins = members.filter((member) => member.role === "ADMIN").length;
@@ -321,6 +354,17 @@ export default function SettingsConsole({
       ),
     [integrations]
   );
+  const automationSummary = useMemo(
+    () =>
+      summarizeWorkspaceAutomations(
+        automations.map((automation) => ({
+          status: automation.status,
+          targetProjectId: automation.targetProjectId || null,
+          action: automation.action,
+        }))
+      ),
+    [automations]
+  );
   const securitySignals = [
     {
       label: "Current access",
@@ -339,7 +383,7 @@ export default function SettingsConsole({
     },
   ];
 
-  function clearMessages(scope: "workspace" | "profile" | "notifications" | "team" | "billing" | "integrations") {
+  function clearMessages(scope: "workspace" | "profile" | "notifications" | "team" | "billing" | "integrations" | "automations") {
     if (scope === "workspace") {
       setWorkspaceMessage(null);
       setWorkspaceError(null);
@@ -363,6 +407,11 @@ export default function SettingsConsole({
     if (scope === "integrations") {
       setIntegrationMessage(null);
       setIntegrationError(null);
+      return;
+    }
+    if (scope === "automations") {
+      setAutomationMessage(null);
+      setAutomationError(null);
       return;
     }
     setTeamMessage(null);
@@ -557,6 +606,135 @@ export default function SettingsConsole({
         setIntegrationError(err instanceof Error ? err.message : "Integration kaydi guncellenemedi.");
       } finally {
         setSavingIntegrationProvider(null);
+      }
+    });
+  }
+
+  function updateAutomation(
+    automationId: string,
+    patch: Partial<{
+      name: string;
+      description: string;
+      trigger: Props["initialAutomations"][number]["trigger"];
+      action: Props["initialAutomations"][number]["action"];
+      status: Props["initialAutomations"][number]["status"];
+      targetProjectId: string;
+      config: Record<string, unknown>;
+      lastRunAt: string;
+    }>
+  ) {
+    setAutomations((current) =>
+      current.map((automation) =>
+        automation.id === automationId
+          ? {
+              ...automation,
+              ...patch,
+              config: {
+                ...automation.config,
+                ...(patch.config ?? {}),
+              },
+            }
+          : automation
+      )
+    );
+  }
+
+  function createAutomation() {
+    startAutomationTransition(async () => {
+      clearMessages("automations");
+      setSavingAutomationId("new");
+
+      try {
+        const res = await fetch("/api/workspace/automations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "New delivery automation",
+            description: "Ops-trigger routing recipe",
+            trigger: "TASK_OVERDUE",
+            action: "SLACK_MESSAGE",
+            status: "DRAFT",
+            targetProjectId: null,
+            thresholdHours: 24,
+            channel: "#delivery-alerts",
+            messageTemplate: "Overdue task owner checkpoint ac",
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error ?? "Automation kaydi olusturulamadi.");
+        }
+
+        setAutomations((current) => [
+          ...current,
+          {
+            ...data.automation,
+            description: data.automation.description ?? "",
+            targetProjectId: data.automation.targetProjectId ?? "",
+            config: (data.automation.config as Record<string, unknown> | null) ?? {},
+            lastRunAt: data.automation.lastRunAt ? new Date(data.automation.lastRunAt).toISOString().slice(0, 10) : "",
+          },
+        ]);
+        setAutomationMessage("Yeni automation taslagi olusturuldu.");
+        router.refresh();
+      } catch (err) {
+        setAutomationError(err instanceof Error ? err.message : "Automation kaydi olusturulamadi.");
+      } finally {
+        setSavingAutomationId(null);
+      }
+    });
+  }
+
+  function saveAutomation(automationId: string) {
+    startAutomationTransition(async () => {
+      clearMessages("automations");
+      setSavingAutomationId(automationId);
+
+      try {
+        const automation = automations.find((item) => item.id === automationId);
+        if (!automation) throw new Error("Automation kaydi bulunamadi.");
+
+        const res = await fetch(`/api/workspace/automations/${automationId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: automation.name,
+            description: automation.description || null,
+            trigger: automation.trigger,
+            action: automation.action,
+            status: automation.status,
+            targetProjectId: automation.targetProjectId || null,
+            lastRunAt: automation.lastRunAt || null,
+            ...automation.config,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error ?? "Automation kaydi guncellenemedi.");
+        }
+
+        setAutomations((current) =>
+          current.map((item) =>
+            item.id === automationId
+              ? {
+                  ...item,
+                  ...data.automation,
+                  description: data.automation.description ?? "",
+                  targetProjectId: data.automation.targetProjectId ?? "",
+                  config: (data.automation.config as Record<string, unknown> | null) ?? {},
+                  lastRunAt: data.automation.lastRunAt ? new Date(data.automation.lastRunAt).toISOString().slice(0, 10) : "",
+                }
+              : item
+          )
+        );
+        setAutomationMessage("Automation kaydi guncellendi.");
+        router.refresh();
+      } catch (err) {
+        setAutomationError(err instanceof Error ? err.message : "Automation kaydi guncellenemedi.");
+      } finally {
+        setSavingAutomationId(null);
       }
     });
   }
@@ -1292,6 +1470,268 @@ export default function SettingsConsole({
                   {!canManageWorkspace && <Notice tone="warning">Integration ayarlari sadece owner veya admin tarafindan guncellenebilir.</Notice>}
                   {integrationError && <Notice tone="danger">{integrationError}</Notice>}
                   {integrationMessage && <Notice tone="success">{integrationMessage}</Notice>}
+
+                  <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                          <PanelsTopLeft size={16} className="text-cyan-600" />
+                          Automation recipes
+                        </div>
+                        <div className="mt-1 text-xs leading-6 text-slate-500">
+                          Trigger + action kurallari integration katmanini operasyon otomasyonuna baglar.
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={createAutomation}
+                        loading={isAutomationPending && savingAutomationId === "new"}
+                        disabled={!canManageWorkspace}
+                      >
+                        Yeni automation
+                      </Button>
+                    </div>
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      <SnapshotCard label="Active" value={String(automationSummary.active)} note="Canli otomasyon recipe" />
+                      <SnapshotCard label="Draft" value={String(automationSummary.draft)} note="Henoz aktif edilmeyen kural" />
+                      <SnapshotCard label="Project scope" value={String(automationSummary.projectScoped)} note={`${automationSummary.outbound} outbound action`} />
+                    </div>
+
+                    <div className="mt-5 space-y-4">
+                      {automations.map((automation) => (
+                        <div key={automation.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm font-semibold text-slate-900">{automation.name}</div>
+                              <div className="mt-1 text-xs text-slate-500">
+                                {WORKSPACE_AUTOMATION_TRIGGER_OPTIONS.find((item) => item.value === automation.trigger)?.label} -{" "}
+                                {WORKSPACE_AUTOMATION_ACTION_OPTIONS.find((item) => item.value === automation.action)?.label}
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => saveAutomation(automation.id)}
+                              loading={isAutomationPending && savingAutomationId === automation.id}
+                              disabled={!canManageWorkspace}
+                            >
+                              Kaydet
+                            </Button>
+                          </div>
+
+                          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            <Field
+                              label="Automation name"
+                              value={automation.name}
+                              onChange={(value) => updateAutomation(automation.id, { name: value })}
+                              disabled={!canManageWorkspace || isAutomationPending}
+                              placeholder="Delivery automation"
+                            />
+                            <Field
+                              label="Last run"
+                              type="date"
+                              value={automation.lastRunAt}
+                              onChange={(value) => updateAutomation(automation.id, { lastRunAt: value })}
+                              disabled={!canManageWorkspace || isAutomationPending}
+                            />
+                            <TextAreaField
+                              label="Description"
+                              value={automation.description}
+                              onChange={(value) => updateAutomation(automation.id, { description: value })}
+                              disabled={!canManageWorkspace || isAutomationPending}
+                              rows={2}
+                              placeholder="Ops routing summary"
+                            />
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-slate-700">Trigger</label>
+                                <select
+                                  value={automation.trigger}
+                                  onChange={(event) =>
+                                    updateAutomation(automation.id, {
+                                      trigger: event.target.value as Props["initialAutomations"][number]["trigger"],
+                                    })
+                                  }
+                                  disabled={!canManageWorkspace || isAutomationPending}
+                                  className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                                >
+                                  {WORKSPACE_AUTOMATION_TRIGGER_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-slate-700">Action</label>
+                                <select
+                                  value={automation.action}
+                                  onChange={(event) =>
+                                    updateAutomation(automation.id, {
+                                      action: event.target.value as Props["initialAutomations"][number]["action"],
+                                    })
+                                  }
+                                  disabled={!canManageWorkspace || isAutomationPending}
+                                  className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                                >
+                                  {WORKSPACE_AUTOMATION_ACTION_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-slate-700">Status</label>
+                                <select
+                                  value={automation.status}
+                                  onChange={(event) =>
+                                    updateAutomation(automation.id, {
+                                      status: event.target.value as Props["initialAutomations"][number]["status"],
+                                    })
+                                  }
+                                  disabled={!canManageWorkspace || isAutomationPending}
+                                  className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                                >
+                                  {WORKSPACE_AUTOMATION_STATUS_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-slate-700">Target project</label>
+                                <select
+                                  value={automation.targetProjectId}
+                                  onChange={(event) => updateAutomation(automation.id, { targetProjectId: event.target.value })}
+                                  disabled={!canManageWorkspace || isAutomationPending}
+                                  className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                                >
+                                  {automationProjectOptions.map((option) => (
+                                    <option key={option.value || "workspace"} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            {automation.trigger === "TASK_OVERDUE" && (
+                              <Field
+                                label="Threshold hours"
+                                type="number"
+                                value={String(automation.config.thresholdHours ?? "")}
+                                onChange={(value) => updateAutomation(automation.id, { config: { thresholdHours: value } })}
+                                disabled={!canManageWorkspace || isAutomationPending}
+                                placeholder="24"
+                              />
+                            )}
+                            {(automation.trigger === "RISK_CREATED" || automation.trigger === "MILESTONE_AT_RISK") && (
+                              <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-slate-700">Severity filter</label>
+                                <select
+                                  value={String(automation.config.severity ?? "ANY")}
+                                  onChange={(event) => updateAutomation(automation.id, { config: { severity: event.target.value } })}
+                                  disabled={!canManageWorkspace || isAutomationPending}
+                                  className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                                >
+                                  {["ANY", "HIGH", "CRITICAL"].map((option) => (
+                                    <option key={option} value={option}>
+                                      {option}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                            {automation.trigger === "WEEKLY_DIGEST_READY" && (
+                              <Field
+                                label="Digest day (1-7)"
+                                type="number"
+                                value={String(automation.config.digestDay ?? "")}
+                                onChange={(value) => updateAutomation(automation.id, { config: { digestDay: value } })}
+                                disabled={!canManageWorkspace || isAutomationPending}
+                                placeholder="1"
+                              />
+                            )}
+
+                            {automation.action === "SLACK_MESSAGE" && (
+                              <>
+                                <Field
+                                  label="Slack channel"
+                                  value={String(automation.config.channel ?? "")}
+                                  onChange={(value) => updateAutomation(automation.id, { config: { channel: value } })}
+                                  disabled={!canManageWorkspace || isAutomationPending}
+                                  placeholder="#delivery-alerts"
+                                />
+                                <TextAreaField
+                                  label="Message template"
+                                  value={String(automation.config.messageTemplate ?? "")}
+                                  onChange={(value) => updateAutomation(automation.id, { config: { messageTemplate: value } })}
+                                  disabled={!canManageWorkspace || isAutomationPending}
+                                  rows={2}
+                                  placeholder="Owner checkpoint ac"
+                                />
+                              </>
+                            )}
+                            {automation.action === "WEBHOOK" && (
+                              <Field
+                                label="Webhook endpoint"
+                                type="url"
+                                value={String(automation.config.endpoint ?? "")}
+                                onChange={(value) => updateAutomation(automation.id, { config: { endpoint: value } })}
+                                disabled={!canManageWorkspace || isAutomationPending}
+                                placeholder="https://hooks.example.com/synorq"
+                              />
+                            )}
+                            {automation.action === "CREATE_TASK" && (
+                              <>
+                                <Field
+                                  label="Task title"
+                                  value={String(automation.config.taskTitle ?? "")}
+                                  onChange={(value) => updateAutomation(automation.id, { config: { taskTitle: value } })}
+                                  disabled={!canManageWorkspace || isAutomationPending}
+                                  placeholder="Follow up on delivery signal"
+                                />
+                                <Field
+                                  label="Section name"
+                                  value={String(automation.config.sectionName ?? "")}
+                                  onChange={(value) => updateAutomation(automation.id, { config: { sectionName: value } })}
+                                  disabled={!canManageWorkspace || isAutomationPending}
+                                  placeholder="Planlandi"
+                                />
+                                <div className="space-y-1.5">
+                                  <label className="text-sm font-medium text-slate-700">Assignee mode</label>
+                                  <select
+                                    value={String(automation.config.assigneeMode ?? "PROJECT_OWNER")}
+                                    onChange={(event) => updateAutomation(automation.id, { config: { assigneeMode: event.target.value } })}
+                                    disabled={!canManageWorkspace || isAutomationPending}
+                                    className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                                  >
+                                    {["PROJECT_OWNER", "WORKSPACE_OWNER", "UNASSIGNED"].map((option) => (
+                                      <option key={option} value={option}>
+                                        {option}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {!canManageWorkspace && <Notice tone="warning">Automation ayarlari sadece owner veya admin tarafindan guncellenebilir.</Notice>}
+                    {automationError && <Notice tone="danger">{automationError}</Notice>}
+                    {automationMessage && <Notice tone="success">{automationMessage}</Notice>}
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -1301,6 +1741,7 @@ export default function SettingsConsole({
                       <SnapshotCard label="Notification source" value="Workspace state" note="Rule toggles Settings ve Notification Console ile ortak calisir." />
                       <SnapshotCard label="Audit trace" value="Required" note="Her integration mutasyonu activity ve audit timeline'a duser." />
                       <SnapshotCard label="Access model" value={canManageWorkspace ? "Admin-managed" : "Restricted"} note="Baglanti aktivasyonu owner/admin katmaninda tutulur." />
+                      <SnapshotCard label="Automation posture" value={`${automationSummary.active} active`} note={`${automationSummary.draft} draft, ${automationSummary.paused} paused`} />
                     </div>
                   </div>
 
@@ -1315,6 +1756,9 @@ export default function SettingsConsole({
                       </div>
                       <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                         API key layer secret preview ve label ile automation entry point olarak modellenir.
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                        Automation recipes trigger/action kombinasyonlariyla Slack, webhook veya task creation akisina baglanir.
                       </div>
                     </div>
                   </div>

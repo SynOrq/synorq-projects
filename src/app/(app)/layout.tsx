@@ -173,8 +173,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="flex-1 overflow-y-auto">
         {workspace && (
           <AppTopbar
-            workspaceName={workspace.name}
-            activeProjectCount={projects.length}
             overdueCount={overdueCount}
             unreadAlertCount={unreadAlertCount}
             alerts={alerts}
@@ -194,7 +192,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               isOwner: member.user.id === workspace.ownerId,
             }))}
             checklist={onboarding.items.map((item) => ({ label: item.label, done: item.done }))}
-            onboardingHref="/onboarding"
             nextChecklistHref={onboarding.nextItem?.href ?? "/onboarding"}
             nextChecklistLabel={onboarding.nextItem?.cta ?? "Setup hub"}
             showChecklist={!workspaceState?.onboardingDismissedAt}

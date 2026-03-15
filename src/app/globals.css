@@ -8,8 +8,30 @@
   --bg-muted:     #f7f8fa;
 
   /* Sidebar */
-  --sidebar-bg:     #0d1117;
-  --sidebar-border: rgba(255,255,255,0.06);
+  --sidebar-bg:            #0b1220;
+  --sidebar-surface:       rgba(148,163,184,0.08);
+  --sidebar-border:        rgba(148,163,184,0.16);
+  --sidebar-border-strong: rgba(148,163,184,0.24);
+  --sidebar-text:          #eef4ff;
+  --sidebar-text-muted:    #a9b4c8;
+  --sidebar-text-subtle:   #74829c;
+  --sidebar-icon:          #d7e1f3;
+  --sidebar-icon-muted:    #7e8aa3;
+  --sidebar-accent:        #7c8cff;
+  --sidebar-accent-strong: #9ca8ff;
+  --sidebar-accent-soft:   rgba(124,140,255,0.18);
+  --sidebar-active-bg:     rgba(124,140,255,0.16);
+  --sidebar-active-border: rgba(124,140,255,0.28);
+  --sidebar-active-text:   #f7f9ff;
+  --sidebar-hover-bg:      rgba(148,163,184,0.1);
+  --sidebar-focus-ring:    rgba(124,140,255,0.38);
+  --sidebar-scrollbar-hover: rgba(169,180,200,0.34);
+  --sidebar-project-sky:    #66a4ff;
+  --sidebar-project-teal:   #53b0ab;
+  --sidebar-project-indigo: #7c8cff;
+  --sidebar-project-violet: #9b86ff;
+  --sidebar-project-amber:  #c69561;
+  --sidebar-project-rose:   #be7a85;
 
   /* Text */
   --text-primary:   #0a0e1a;
@@ -85,10 +107,10 @@ a {
 
 /* Sidebar scrollbar - darker */
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.12);
+  background: var(--sidebar-border-strong);
 }
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.2);
+  background: var(--sidebar-scrollbar-hover);
 }
 
 /* Utility classes */

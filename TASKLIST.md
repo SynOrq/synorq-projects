@@ -156,9 +156,9 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Slack
   - [x] Google Calendar
   - [x] Webhooks / API keys
-- [ ] Automations engine
-- [ ] Executive weekly digest
-- [ ] AI-assisted summaries
+- [x] Automations engine
+- [x] Executive weekly digest
+- [x] AI-assisted summaries
 
 ## Information Architecture
 

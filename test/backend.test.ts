@@ -1,7 +1,9 @@
 import "./settings-api.test.ts";
 import "./activity.test.ts";
+import "./ai-summaries.test.ts";
 import "./portfolio.test.ts";
 import "./analytics.test.ts";
+import "./automations.test.ts";
 import "./billing.test.ts";
 import "./client-portal.test.ts";
 import "./integrations.test.ts";
@@ -11,6 +13,7 @@ import "./command-center.test.ts";
 import "./onboarding.test.ts";
 import "./projects-saved-view.test.ts";
 import "./dashboard.test.ts";
+import "./executive-digest.test.ts";
 import "./projects-portfolio.test.ts";
 import "./audit.test.ts";
 import "./notifications.test.ts";

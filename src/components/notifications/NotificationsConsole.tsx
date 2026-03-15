@@ -436,7 +436,14 @@ export default function NotificationsConsole({
           </section>
 
           <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="text-lg font-semibold text-slate-900">Digest notes</div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-lg font-semibold text-slate-900">Digest notes</div>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/reports/digest">
+                  Executive view
+                </Link>
+              </Button>
+            </div>
             <div className="mt-4 space-y-3">
               {digest.summary.map((item) => (
                 <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">

@@ -1,0 +1,129 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { buildExecutiveReport } from "../src/lib/reports.ts";
+import { buildExecutiveAISummary, buildProjectAISummary } from "../src/lib/ai-summaries.ts";
+
+const now = new Date("2026-03-15T10:00:00.000Z");
+
+test("buildProjectAISummary highlights delivery, risk and capacity pressure", () => {
+  const summary = buildProjectAISummary({
+    project: {
+      name: "Helio Sprint",
+      status: "ACTIVE",
+      type: "RETAINER",
+      priority: "URGENT",
+      dueDate: new Date("2026-03-17T00:00:00.000Z"),
+      client: { name: "Helio", health: "AT_RISK" },
+    },
+    health: {
+      key: "risk",
+      score: 42,
+      label: "Riskli",
+    },
+    metrics: {
+      openTasks: 6,
+      completedTasks: 2,
+      overdueTasks: 2,
+      dueThisWeekTasks: 3,
+      unassignedTasks: 1,
+      completionRate: 25,
+    },
+    teamLoad: [
+      {
+        id: "user_1",
+        name: "Aylin",
+        loadState: "overloaded",
+        activeTasks: 4,
+        overdueTasks: 1,
+        dueThisWeekTasks: 3,
+      },
+    ],
+    risks: [
+      {
+        id: "risk_1",
+        title: "Client approval gap",
+        severity: "critical",
+        status: "OPEN",
+      },
+    ],
+  });
+
+  assert.equal(summary.tone, "attention");
+  assert.match(summary.headline, /mudahale|gerektiriyor/i);
+  assert.equal(summary.focusAreas.length, 3);
+  assert.ok(summary.nextActions.length >= 3);
+});
+
+test("buildExecutiveAISummary converts report data into leadership briefing", () => {
+  const report = buildExecutiveReport(
+    [
+      {
+        id: "project_1",
+        name: "Helio Sprint",
+        description: null,
+        color: "#ea580c",
+        status: "ACTIVE",
+        type: "RETAINER",
+        priority: "HIGH",
+        tags: [],
+        startDate: null,
+        dueDate: new Date("2026-03-17T00:00:00.000Z"),
+        createdAt: new Date("2026-03-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-14T00:00:00.000Z"),
+        owner: { id: "user_1", name: "Aylin", email: "aylin@synorq.demo" },
+        client: { id: "client_1", name: "Helio", health: "AT_RISK" },
+        tasks: [],
+        milestones: [],
+        risks: [],
+        totalTasks: 3,
+        completedTasks: 1,
+        openTasks: 2,
+        overdueTasks: 1,
+        dueThisWeekTasks: 2,
+        unassignedTasks: 0,
+        completionRate: 33,
+        activeAssignees: 1,
+        health: { key: "risk", label: "Riskli", tone: "", score: 42 },
+        dueDateResolved: new Date("2026-03-17T00:00:00.000Z"),
+        dueInDays: 2,
+        lastActivityAt: new Date("2026-03-14T00:00:00.000Z"),
+        openMilestones: 1,
+        completedMilestones: 0,
+        milestoneCompletionRate: 0,
+        nextMilestone: null,
+        openRisks: 2,
+        criticalRisks: 1,
+      },
+    ],
+    [
+      {
+        id: "user_1",
+        name: "Aylin",
+        email: "aylin@synorq.demo",
+        image: null,
+        role: "ADMIN",
+        weeklyCapacityHours: 30,
+        projectedHours: 29,
+        loggedHours: 8,
+        availableHours: 1,
+        utilization: 97,
+        activeTasks: 4,
+        overdueTasks: 1,
+        dueThisWeekTasks: 3,
+        blockedTasks: 1,
+        completedLast7Days: 1,
+        loadState: "overloaded",
+        upcomingTasks: [],
+      },
+    ],
+    [{ id: "activity_1", action: "risk.created", createdAt: new Date("2026-03-14T00:00:00.000Z") }],
+    now
+  );
+
+  const summary = buildExecutiveAISummary(report);
+
+  assert.equal(summary.tone, "attention");
+  assert.match(summary.headline, /AI-assisted briefing/i);
+  assert.equal(summary.focusAreas.length, 3);
+  assert.ok(summary.nextActions.length > 0);
+});

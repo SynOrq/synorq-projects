@@ -17,6 +17,13 @@ export default async function SettingsPage() {
           projects: true,
         },
       },
+      projects: {
+        select: {
+          id: true,
+          name: true,
+        },
+        orderBy: { name: "asc" },
+      },
       owner: {
         select: {
           id: true,
@@ -42,6 +49,9 @@ export default async function SettingsPage() {
       billing: true,
       integrations: {
         orderBy: { provider: "asc" },
+      },
+      automations: {
+        orderBy: { createdAt: "asc" },
       },
     },
   });
@@ -121,6 +131,24 @@ export default async function SettingsPage() {
         config: integration.config as Record<string, unknown> | null,
         lastSyncedAt: integration.lastSyncedAt,
       }))}
+      initialAutomations={workspace.automations.map((automation) => ({
+        id: automation.id,
+        name: automation.name,
+        description: automation.description,
+        trigger: automation.trigger,
+        action: automation.action,
+        status: automation.status,
+        targetProjectId: automation.targetProjectId,
+        config: automation.config as Record<string, unknown> | null,
+        lastRunAt: automation.lastRunAt,
+      }))}
+      automationProjectOptions={[
+        { value: "", label: "Workspace-wide" },
+        ...workspace.projects.map((project) => ({
+          value: project.id,
+          label: project.name,
+        })),
+      ]}
       initialMembers={workspace.members}
       currentUserId={userId}
       currentAccess={{

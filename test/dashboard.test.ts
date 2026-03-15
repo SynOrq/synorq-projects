@@ -68,6 +68,7 @@ test("dashboard helpers derive timelines, blockers and client visibility", () =>
       projectName: "Northstar",
       projectColor: "#2563eb",
       projectDueDate: new Date("2026-03-16T00:00:00.000Z"),
+      assignee: { id: "user_1", name: "Tarik", email: "tarik@synorq.com" },
       health: { key: "risk", label: "Riskli", score: 44 },
     },
     {
@@ -85,13 +86,14 @@ test("dashboard helpers derive timelines, blockers and client visibility", () =>
       projectName: "Northstar",
       projectColor: "#2563eb",
       projectDueDate: new Date("2026-03-16T00:00:00.000Z"),
+      assignee: { id: "user_1", name: "Tarik", email: "tarik@synorq.com" },
       health: { key: "risk", label: "Riskli", score: 44 },
     },
   ];
 
   const trend = buildWeeklyCompletionTrend(tasks, now);
   const deadlines = buildUpcomingDeadlines(projects as never, tasks as never, now);
-  const blockers = buildRecentBlockers(projects as never, tasks as never);
+  const blockers = buildRecentBlockers(projects as never, tasks as never, now);
   const clients = buildClientRiskVisibility(projects as never);
   const quickActions = buildQuickActions({
     riskProjects: 1,
@@ -101,10 +103,15 @@ test("dashboard helpers derive timelines, blockers and client visibility", () =>
   });
 
   assert.equal(trend.length, 7);
-  assert.equal(trend.at(-2)?.count, 1);
+  assert.equal(trend.some((point) => point.completedCount === 1), true);
+  assert.equal(trend.some((point) => point.createdCount === 1), true);
   assert.equal(deadlines[0]?.title, "Fix launch blockers");
+  assert.equal(deadlines[0]?.statusLabel, "Blocked");
+  assert.equal(deadlines[0]?.ownerName, "Tarik");
   assert.equal(blockers[0]?.title, "Fix launch blockers");
+  assert.equal(blockers[0]?.ageDays, 1);
   assert.equal(clients[0]?.name, "Northstar");
+  assert.equal(clients[0]?.riskScore, 9);
   assert.equal(quickActions[0]?.href, "/projects?health=risk&view=table");
 });
 

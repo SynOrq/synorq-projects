@@ -68,6 +68,8 @@ function getActivityTitle(action: string) {
     "workspace.preference_changed": "Bildirim tercihleri guncellendi",
     "workspace.billing_updated": "Billing ayarlari guncellendi",
     "workspace.integration_updated": "Integration ayarlari guncellendi",
+    "workspace.automation_created": "Automation akisi olusturuldu",
+    "workspace.automation_updated": "Automation akisi guncellendi",
     "client.portal_published": "Client portal yayinlandi",
     "client.portal_updated": "Client portal guncellendi",
     "client.portal_unpublished": "Client portal taslaga alindi",
@@ -115,6 +117,10 @@ function getActivityDetail(params: {
       return `${params.actorName} billing planini ${metadata?.plan ?? "guncel"} seviyesine aldi ve usage guardrail ayarlarini kaydetti.`;
     case "workspace.integration_updated":
       return `${params.actorName} ${metadata?.name ?? "integration"} baglantisini ${metadata?.status ?? "guncel"} duruma getirdi.`;
+    case "workspace.automation_created":
+      return `${params.actorName} ${metadata?.name ?? "automation"} akisini ${metadata?.status ?? "draft"} durumda olusturdu.`;
+    case "workspace.automation_updated":
+      return `${params.actorName} ${metadata?.name ?? "automation"} akisini ${metadata?.status ?? "guncel"} olarak kaydetti.`;
     case "client.portal_published":
       return `${params.actorName} ${metadata?.clientName ?? "client"} icin read-only portal yayina aldi.`;
     case "client.portal_updated":

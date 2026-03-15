@@ -426,6 +426,74 @@ async function seed() {
     });
   }
 
+  const automationBlueprints = [
+    {
+      name: "Overdue tasks -> Slack",
+      description: "Overdue task owner checkpoint bilgisini delivery kanalina yollar.",
+      trigger: "TASK_OVERDUE",
+      action: "SLACK_MESSAGE",
+      status: "ACTIVE",
+      targetProjectId: null,
+      config: {
+        thresholdHours: 24,
+        channel: "#delivery-alerts",
+        messageTemplate: "Overdue task detected. Owner checkpoint ac ve risk durumunu netlestir.",
+      },
+      lastRunAt: hoursAgo(5),
+    },
+    {
+      name: "Critical risk -> Webhook",
+      description: "Yeni kritik risk kayitlarini ops webhook katmanina aktarir.",
+      trigger: "RISK_CREATED",
+      action: "WEBHOOK",
+      status: "ACTIVE",
+      targetProjectId: null,
+      config: {
+        severity: "CRITICAL",
+        endpoint: "https://hooks.synorq.demo/ops/risk",
+      },
+      lastRunAt: hoursAgo(9),
+    },
+    {
+      name: "Weekly digest follow-up task",
+      description: "Haftalik digest hazir oldugunda owner icin takip gorevi olusturur.",
+      trigger: "WEEKLY_DIGEST_READY",
+      action: "CREATE_TASK",
+      status: "DRAFT",
+      targetProjectId: null,
+      config: {
+        digestDay: 1,
+        taskTitle: "Review weekly executive digest",
+        sectionName: "Planlandi",
+        assigneeMode: "WORKSPACE_OWNER",
+      },
+      lastRunAt: null,
+    },
+  ];
+
+  for (const automation of automationBlueprints) {
+    const existingAutomation = await prisma.workspaceAutomation.findFirst({
+      where: {
+        workspaceId: workspace.id,
+        name: automation.name,
+      },
+    });
+
+    if (existingAutomation) {
+      await prisma.workspaceAutomation.update({
+        where: { id: existingAutomation.id },
+        data: automation,
+      });
+    } else {
+      await prisma.workspaceAutomation.create({
+        data: {
+          workspaceId: workspace.id,
+          ...automation,
+        },
+      });
+    }
+  }
+
   const projectBlueprints = [
     {
       name: "Northstar Website Relaunch",

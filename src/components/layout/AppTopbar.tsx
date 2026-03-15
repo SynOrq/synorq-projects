@@ -3,13 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import {
-  Bell,
-  FolderKanban,
-  Plus,
-  Search,
-  TriangleAlert,
-} from "lucide-react";
+import { Bell, Plus, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CommandCenter from "@/components/layout/CommandCenter";
 
@@ -28,8 +22,6 @@ type ChecklistItem = {
 };
 
 interface AppTopbarProps {
-  workspaceName: string;
-  activeProjectCount: number;
   overdueCount: number;
   unreadAlertCount: number;
   alerts: AlertItem[];
@@ -37,7 +29,6 @@ interface AppTopbarProps {
   commandTasks: Array<{ id: string; title: string; href: string; projectName: string; dueLabel?: string | null }>;
   commandPeople: Array<{ id: string; name: string; email: string; role: "ADMIN" | "MEMBER" | "VIEWER"; isOwner?: boolean }>;
   checklist: ChecklistItem[];
-  onboardingHref: string;
   nextChecklistHref: string;
   nextChecklistLabel: string;
   showChecklist: boolean;
@@ -51,7 +42,6 @@ export default function AppTopbar({
   commandTasks,
   commandPeople,
   checklist,
-  onboardingHref,
   nextChecklistHref,
   nextChecklistLabel,
   showChecklist,

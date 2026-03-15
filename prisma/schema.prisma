@@ -96,6 +96,7 @@ model Workspace {
   states  WorkspaceUserState[]
   billing WorkspaceBilling?
   integrations WorkspaceIntegration[]
+  automations WorkspaceAutomation[]
 }
 
 model WorkspaceMember {
@@ -150,6 +151,26 @@ model WorkspaceIntegration {
   @@unique([workspaceId, provider])
 }
 
+model WorkspaceAutomation {
+  id              String                    @id @default(cuid())
+  workspaceId     String
+  targetProjectId String?
+  name            String
+  description     String?
+  trigger         WorkspaceAutomationTrigger
+  action          WorkspaceAutomationAction
+  status          WorkspaceAutomationStatus @default(DRAFT)
+  config          Json?
+  lastRunAt       DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  targetProject Project?  @relation("AutomationTargetProject", fields: [targetProjectId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, status])
+}
+
 enum WorkspacePlan {
   TEAM
   GROWTH
@@ -175,6 +196,25 @@ enum WorkspaceIntegrationStatus {
   DISCONNECTED
   CONNECTED
   ERROR
+}
+
+enum WorkspaceAutomationTrigger {
+  TASK_OVERDUE
+  RISK_CREATED
+  MILESTONE_AT_RISK
+  WEEKLY_DIGEST_READY
+}
+
+enum WorkspaceAutomationAction {
+  SLACK_MESSAGE
+  WEBHOOK
+  CREATE_TASK
+}
+
+enum WorkspaceAutomationStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
 }
 
 model WorkspaceMemberCapacity {
@@ -217,6 +257,7 @@ model Project {
   milestones   Milestone[]
   risks        Risk[]
   activityLogs ActivityLog[]
+  automationTargets WorkspaceAutomation[] @relation("AutomationTargetProject")
 }
 
 enum ProjectVisibility {

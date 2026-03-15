@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AlertTriangle, ArrowRight, BarChart3, CalendarRange, CheckCircle2, Clock3, Gauge, Share2, TrendingUp, Users } from "lucide-react";
+import { buildExecutiveAISummary } from "@/lib/ai-summaries";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { filterAccessibleProjects } from "@/lib/project-access";
@@ -145,6 +146,7 @@ export default async function ReportsPage() {
     )
   );
   const report = buildExecutiveReport(projects, teamCapacity.snapshots, filteredActivity);
+  const aiSummary = buildExecutiveAISummary(report);
 
   const summaryCards = [
     {
@@ -199,6 +201,12 @@ export default async function ReportsPage() {
                   Share view
                 </Link>
               </Button>
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/reports/digest">
+                  <BarChart3 size={13} />
+                  Executive digest
+                </Link>
+              </Button>
               <Button asChild variant="outline" size="sm">
                 <Link href="/projects?health=risk">
                   Riskte projeler
@@ -238,6 +246,49 @@ export default async function ReportsPage() {
               </div>
             );
           })}
+        </section>
+
+        <section className="grid gap-6 xl:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 px-5 py-4 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">AI-assisted briefing</div>
+                <h2 className="mt-1 text-base font-semibold text-slate-900">{aiSummary.headline}</h2>
+              </div>
+              <Badge variant={aiSummary.tone === "attention" ? "danger" : aiSummary.tone === "watch" ? "warning" : "success"}>
+                {aiSummary.tone}
+              </Badge>
+            </div>
+            <div className="p-5 space-y-4">
+              {aiSummary.narrative.map((item) => (
+                <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+                  {item}
+                </div>
+              ))}
+              <div className="grid gap-3 sm:grid-cols-3">
+                {aiSummary.focusAreas.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+                    <div className="text-sm font-semibold text-slate-900">{item.title}</div>
+                    <div className="mt-2 text-xs leading-6 text-slate-500">{item.detail}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-950 shadow-sm">
+            <div className="border-b border-white/10 px-5 py-4">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Leadership moves</div>
+              <h2 className="mt-1 text-base font-semibold text-white">AI&apos;nin one cikardigi yonetim aksiyonlari</h2>
+            </div>
+            <div className="p-5 space-y-3">
+              {aiSummary.nextActions.map((item) => (
+                <div key={item} className="rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-200">
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section className="grid gap-6 xl:grid-cols-2">
