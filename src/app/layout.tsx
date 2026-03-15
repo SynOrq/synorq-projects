@@ -13,8 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Synorq Projects",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  title: {
+    default: "Synorq",
+    template: "%s | Synorq",
+  },
   description: "Proje, ekip ve görev operasyonunu tek akışta yöneten Synorq Projects.",
+  applicationName: "Synorq",
 };
 
 export default function RootLayout({
