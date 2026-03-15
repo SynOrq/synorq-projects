@@ -168,7 +168,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   });
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f4f7fb]">
+    <div className="flex h-screen overflow-hidden bg-[#f0f2f5]">
       <Sidebar session={session} workspace={workspace} projects={projects} />
       <main className="flex-1 overflow-y-auto">
         {workspace && (

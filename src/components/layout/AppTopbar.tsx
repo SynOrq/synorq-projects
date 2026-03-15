@@ -4,12 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
-  ArrowRight,
-  BellRing,
-  CheckCheck,
+  Bell,
   FolderKanban,
-  Rocket,
-  Sparkles,
+  Plus,
+  Search,
   TriangleAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,8 +44,6 @@ interface AppTopbarProps {
 }
 
 export default function AppTopbar({
-  workspaceName,
-  activeProjectCount,
   overdueCount,
   unreadAlertCount,
   alerts,
@@ -62,140 +58,105 @@ export default function AppTopbar({
 }: AppTopbarProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const completedChecklist = checklist.filter((item) => item.done).length;
-  const onboardingProgress = Math.round((completedChecklist / checklist.length) * 100);
-  const previewAlerts = alerts.slice(0, 2);
 
   function updateWorkspaceState(payload: { dismissOnboarding?: boolean; restoreOnboarding?: boolean }) {
     startTransition(async () => {
       setError(null);
-
       try {
         const res = await fetch("/api/workspace/state", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-
         const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error ?? "State guncellenemedi.");
-        }
-
+        if (!res.ok) throw new Error(data.error ?? "State güncellenemedi.");
         router.refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "State guncellenemedi.");
+        setError(err instanceof Error ? err.message : "State güncellenemedi.");
       }
     });
   }
 
+  const hasRisks = overdueCount > 0;
+
   return (
-    <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/92 backdrop-blur">
-      <div className="mx-auto max-w-7xl px-6 py-3">
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                <Sparkles size={12} />
-                Synorq SaaS Shell
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-                <span className="truncate font-black text-slate-950">{workspaceName}</span>
-                <span className="text-slate-300">/</span>
-                <span className="text-slate-600">{activeProjectCount} aktif proje</span>
-                <span className="text-slate-300">/</span>
-                <span className={overdueCount > 0 ? "font-semibold text-red-600" : "text-slate-600"}>
-                  {overdueCount} teslim riski
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <CommandCenter projects={commandProjects} focusTasks={commandTasks} people={commandPeople} alerts={alerts} />
-
-              <div className="flex gap-2">
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/products/projects">
-                    Modul
-                    <ArrowRight size={13} />
-                  </Link>
-                </Button>
-                <Button asChild size="sm">
-                  <Link href="/projects/new">
-                    <Rocket size={13} />
-                    Yeni Proje
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-2 lg:grid-cols-[auto_auto_minmax(0,1fr)]">
-            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
-              <CheckCheck size={14} className="text-emerald-600" />
-              <div className="text-xs text-slate-600">
-                <span className="font-semibold text-slate-900">Onboarding %{onboardingProgress}</span>
-                <span className="mx-1.5 text-slate-300">•</span>
-                <span>{completedChecklist}/{checklist.length} adim tamam</span>
-              </div>
-              <Button asChild type="button" size="sm" variant="outline" className="h-7 px-2 text-xs">
-                <Link href={showChecklist ? onboardingHref : nextChecklistHref}>
-                  {showChecklist ? "Setup hub" : nextChecklistLabel}
-                </Link>
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="ml-auto h-7 px-2 text-xs"
-                loading={isPending}
-                onClick={() =>
-                  updateWorkspaceState(showChecklist ? { dismissOnboarding: true } : { restoreOnboarding: true })
-                }
-              >
-                {showChecklist ? "Gizle" : "Goster"}
-              </Button>
-            </div>
-
-            <Link
-              href="/notifications"
-              className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 transition hover:border-slate-300 hover:bg-white"
-            >
-              <BellRing size={14} className="text-indigo-600" />
-              <span className="font-semibold text-slate-900">{unreadAlertCount}</span>
-              <span>yeni alert</span>
-            </Link>
-
-            <div className="flex min-w-0 items-center gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50 px-2 py-2">
-              {previewAlerts.length === 0 ? (
-                <div className="px-2 text-xs text-slate-500">Su anda gosterilecek kritik sinyal yok.</div>
-              ) : (
-                previewAlerts.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={`flex min-w-0 items-center gap-2 rounded-xl px-3 py-1.5 text-xs transition ${
-                      item.unread ? "bg-white text-slate-700" : "text-slate-600 hover:bg-white"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg ${
-                        item.tone === "risk" ? "bg-red-100 text-red-600" : "bg-indigo-100 text-indigo-600"
-                      }`}
-                    >
-                      {item.tone === "risk" ? <TriangleAlert size={12} /> : <FolderKanban size={12} />}
-                    </span>
-                    <span className="truncate font-medium">{item.title}</span>
-                  </Link>
-                ))
-              )}
-            </div>
-          </div>
-
-          {error && <div className="text-sm text-red-600">{error}</div>}
+    <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-md">
+      <div className="flex h-14 items-center gap-3 px-6">
+        {/* Search / Command */}
+        <div className="flex-1 max-w-xs">
+          <CommandCenter
+            projects={commandProjects}
+            focusTasks={commandTasks}
+            people={commandPeople}
+            alerts={alerts}
+          />
         </div>
+
+        <div className="flex-1" />
+
+        {/* Onboarding pill */}
+        {showChecklist && completedChecklist < checklist.length && (
+          <Link
+            href={nextChecklistHref}
+            className="hidden sm:flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-100"
+          >
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-200 text-amber-800 text-[10px] font-bold">
+              {checklist.length - completedChecklist}
+            </span>
+            {nextChecklistLabel}
+          </Link>
+        )}
+
+        {/* Risk indicator */}
+        {hasRisks && (
+          <Link
+            href="/risks"
+            className="hidden md:flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+          >
+            <TriangleAlert size={12} />
+            {overdueCount} gecikmiş
+          </Link>
+        )}
+
+        {/* Notifications */}
+        <Link
+          href="/notifications"
+          className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+        >
+          <Bell size={16} />
+          {unreadAlertCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
+              {unreadAlertCount > 9 ? "9+" : unreadAlertCount}
+            </span>
+          )}
+        </Link>
+
+        {/* New project */}
+        <Button asChild size="sm">
+          <Link href="/projects/new">
+            <Plus size={14} />
+            Yeni Proje
+          </Link>
+        </Button>
       </div>
+
+      {/* Onboarding dismissed state - show/hide toggle */}
+      {!showChecklist && (
+        <div className="border-t border-slate-100 px-6 py-1.5 flex items-center justify-between bg-slate-50/80">
+          <span className="text-xs text-slate-400">
+            Setup tamamlandı: {completedChecklist}/{checklist.length} adım
+          </span>
+          <button
+            onClick={() => updateWorkspaceState({ restoreOnboarding: true })}
+            disabled={isPending}
+            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            Göster
+          </button>
+        </div>
+      )}
     </div>
   );
 }

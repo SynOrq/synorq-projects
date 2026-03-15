@@ -283,35 +283,35 @@ export default function TeamCapacityConsole({
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_24px_80px_-55px_rgba(15,23,42,0.45)]">
-        <div className="bg-[linear-gradient(135deg,rgba(15,23,42,0.03),rgba(6,182,212,0.08)_42%,rgba(34,197,94,0.08))] px-6 py-6">
-          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                <Users size={13} />
-                Team Load & Capacity
-              </div>
-              <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950">
-                Ekibin kapasitesini, darbo gazlarini ve teslim yogunlugunu tek yuzeyde yonetin.
-              </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-                {workspaceName} icin role-based capacity, due-date density ve ownership sinyalleri ayni ekip konsolunda bir araya gelir.
-              </p>
+    <div className="min-h-full">
+      <div className="border-b border-slate-200 bg-white px-8 py-6">
+        <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
+              <Users size={13} />
+              Team Load & Capacity
             </div>
+            <h1 className="mt-4 text-2xl font-bold text-slate-900">
+              Ekibin kapasitesini, darbo gazlarini ve teslim yogunlugunu tek yuzeyde yonetin.
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
+              {workspaceName} icin role-based capacity, due-date density ve ownership sinyalleri ayni ekip konsolunda bir araya gelir.
+            </p>
+          </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <MetricCard label="Toplam uye" value={String(capacity.summary.totalMembers)} note={`${memberStats.admins} admin`} />
-              <MetricCard label="Yuksek yuk" value={String(capacity.summary.overloadedMembers)} note={`${capacity.summary.watchMembers} izleniyor`} />
-              <MetricCard
-                label="Kapasite"
-                value={`${capacity.summary.projectedHours}/${capacity.summary.weeklyCapacityHours}h`}
-                note={`${capacity.summary.reservedHours}h reserve • ${capacity.summary.outOfOfficeHours}h OOO`}
-              />
-            </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <MetricCard label="Toplam uye" value={String(capacity.summary.totalMembers)} note={`${memberStats.admins} admin`} />
+            <MetricCard label="Yuksek yuk" value={String(capacity.summary.overloadedMembers)} note={`${capacity.summary.watchMembers} izleniyor`} />
+            <MetricCard
+              label="Kapasite"
+              value={`${capacity.summary.projectedHours}/${capacity.summary.weeklyCapacityHours}h`}
+              note={`${capacity.summary.reservedHours}h reserve • ${capacity.summary.outOfOfficeHours}h OOO`}
+            />
           </div>
         </div>
-      </section>
+      </div>
+
+      <div className="p-8 space-y-6">
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Bu hafta teslim" value={String(capacity.summary.dueThisWeekTasks)} note="ekip bazli due yoğunluğu" />
@@ -321,11 +321,11 @@ export default function TeamCapacityConsole({
       </section>
 
       {spotlightMember && (
-        <section className="rounded-[30px] border border-indigo-200 bg-[linear-gradient(135deg,rgba(99,102,241,0.08),rgba(255,255,255,0.95))] p-6 shadow-sm">
+        <section className="rounded-xl border border-indigo-200 bg-[linear-gradient(135deg,rgba(99,102,241,0.08),rgba(255,255,255,0.95))] p-6 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600">Member spotlight</div>
-              <div className="mt-2 text-2xl font-black text-slate-950">{spotlightMember.name}</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Member spotlight</div>
+              <div className="mt-2 text-2xl font-semibold text-slate-900">{spotlightMember.name}</div>
               <div className="mt-1 text-sm text-slate-600">
                 {spotlightMember.role} {spotlightMember.isOwner ? "• Owner" : ""} • {spotlightMember.email}
               </div>
@@ -341,8 +341,8 @@ export default function TeamCapacityConsole({
       )}
 
       <section className="grid gap-6 xl:grid-cols-[1.06fr_0.94fr]">
-        <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-lg font-semibold text-slate-900">
             <Zap size={18} className="text-cyan-600" />
             Capacity lanes
           </div>
@@ -350,7 +350,7 @@ export default function TeamCapacityConsole({
             {capacity.snapshots.map((member) => (
               <div
                 key={member.id}
-                className={`rounded-[24px] border px-4 py-4 ${
+                className={`rounded-xl border px-4 py-4 ${
                   member.id === spotlightMemberId
                     ? "border-indigo-200 bg-indigo-50/60 shadow-[0_14px_32px_-24px_rgba(79,70,229,0.45)]"
                     : "border-slate-200 bg-slate-50"
@@ -361,7 +361,7 @@ export default function TeamCapacityConsole({
                     <div className="flex items-center gap-3">
                       <Avatar name={member.name} image={member.image} size="sm" />
                       <div>
-                        <div className="text-sm font-black text-slate-950">{member.name}</div>
+                        <div className="text-sm font-semibold text-slate-900">{member.name}</div>
                         <div className="mt-1 text-xs text-slate-500">
                           {member.role} {member.isOwner ? "• Owner" : ""}
                         </div>
@@ -374,7 +374,7 @@ export default function TeamCapacityConsole({
                       <StatChip label="Blocked" value={String(member.blockedTasks)} />
                     </div>
                   </div>
-                  <div className="min-w-[220px] rounded-[22px] border border-slate-200 bg-white px-4 py-4">
+                  <div className="min-w-[220px] rounded-xl border border-slate-200 bg-white px-4 py-4">
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>Utilization</span>
                       <span>%{member.utilization}</span>
@@ -419,8 +419,8 @@ export default function TeamCapacityConsole({
                 {member.upcomingTasks.length > 0 && (
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
                     {member.upcomingTasks.map((task) => (
-                      <div key={task.id} className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                        <div className="truncate text-sm font-semibold text-slate-950">{task.title}</div>
+                      <div key={task.id} className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                        <div className="truncate text-sm font-semibold text-slate-900">{task.title}</div>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
                           <span className="rounded-full bg-slate-100 px-2.5 py-1">{task.projectName}</span>
                           <span className="rounded-full bg-slate-100 px-2.5 py-1">{task.priority}</span>
@@ -438,15 +438,15 @@ export default function TeamCapacityConsole({
         </div>
 
         <div className="space-y-6">
-          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-2 text-lg font-semibold text-slate-900">
               <CalendarRange size={18} className="text-indigo-600" />
               Due-date density heatmap
             </div>
             <div className="mt-5 overflow-x-auto">
               <table className="min-w-full border-separate border-spacing-y-2 text-left text-sm">
                 <thead>
-                  <tr className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                  <tr className="text-xs uppercase tracking-wider text-slate-400">
                     <th className="px-3 py-2 font-semibold">Uye</th>
                     {capacity.heatmap.days.map((day) => (
                       <th key={day.key} className="px-2 py-2 text-center font-semibold">
@@ -479,8 +479,8 @@ export default function TeamCapacityConsole({
             </div>
           </section>
 
-          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="text-lg font-black text-slate-950">Capacity guidance</div>
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-lg font-semibold text-slate-900">Capacity guidance</div>
             <div className="mt-4 space-y-3">
               <GuidanceItem
                 tone="danger"
@@ -502,10 +502,10 @@ export default function TeamCapacityConsole({
         </div>
       </section>
 
-      <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-lg font-black text-slate-950">Capacity policy</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Capacity policy</h2>
             <p className="mt-1 text-sm text-slate-500">
               Uye bazli haftalik kapasite override, reserve ve out-of-office saatlerini kalici olarak yonetin.
             </p>
@@ -522,13 +522,13 @@ export default function TeamCapacityConsole({
             const canEditCapacity = canManageMembers;
 
             return (
-              <div key={`capacity-${member.id}`} className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+              <div key={`capacity-${member.id}`} className="rounded-xl border border-slate-200 bg-slate-50 p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
                     <div className="flex items-center gap-3">
                       <Avatar name={member.user.name ?? member.user.email} image={member.user.image} size="sm" />
                       <div>
-                        <div className="text-sm font-black text-slate-950">{member.user.name ?? "Kullanici"}</div>
+                        <div className="text-sm font-semibold text-slate-900">{member.user.name ?? "Kullanici"}</div>
                         <div className="mt-1 text-xs text-slate-500">{member.user.email}</div>
                       </div>
                     </div>
@@ -609,15 +609,15 @@ export default function TeamCapacityConsole({
         </div>
 
         {!canManageMembers && (
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
             Kapasite politikasi degisikligi icin yonetici yetkisi gerekir.
           </div>
         )}
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-lg font-semibold text-slate-900">
             <UserPlus size={18} className="text-indigo-600" />
             Uye davet et
           </div>
@@ -657,29 +657,29 @@ export default function TeamCapacityConsole({
             </Button>
 
             {!canManageMembers && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                 Uye daveti ve rol yonetimi icin yonetici yetkisi gerekir.
               </div>
             )}
 
             {error && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
               </div>
             )}
 
             {inviteMessage && (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                 {inviteMessage}
               </div>
             )}
           </div>
         </section>
 
-        <section className="rounded-[28px] border border-slate-200 bg-white shadow-sm">
+        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
             <div>
-              <h2 className="text-lg font-black text-slate-950">Role matrix</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Role matrix</h2>
               <p className="mt-1 text-sm text-slate-500">Uyeleri goruntuleyin, rol degistirin ve sahipligi koruyun.</p>
             </div>
             <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
@@ -792,15 +792,16 @@ export default function TeamCapacityConsole({
           </div>
         </section>
       </section>
+      </div>
     </div>
   );
 }
 
 function MetricCard({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-2 text-2xl font-black text-slate-950">{value}</div>
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="mt-2 text-2xl font-semibold text-slate-900">{value}</div>
       <div className="mt-2 text-sm leading-6 text-slate-500">{note}</div>
     </div>
   );
@@ -808,7 +809,7 @@ function MetricCard({ label, value, note }: { label: string; value: string; note
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-white px-3 py-3">
+    <div className="rounded-xl bg-white px-3 py-3">
       <div className="text-xs text-slate-400">{label}</div>
       <div className="mt-1 text-sm font-semibold text-slate-900">{value}</div>
     </div>
@@ -833,7 +834,7 @@ function GuidanceItem({
   const Icon = tone === "danger" ? AlertTriangle : tone === "warning" ? CalendarRange : Zap;
 
   return (
-    <div className={`rounded-2xl border px-4 py-4 ${tones[tone]}`}>
+    <div className={`rounded-xl border px-4 py-4 ${tones[tone]}`}>
       <div className="flex items-center gap-2 text-sm font-semibold">
         <Icon size={15} />
         {title}

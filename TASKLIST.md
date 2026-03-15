@@ -20,7 +20,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
 - [x] Milestone veri modeli eklenecek
 - [x] Risk register veri modeli eklenecek
 - [x] Team capacity/workload veri modeli eklenecek
-- [ ] Audit event taxonomy genisletilecek
+- [x] Audit event taxonomy genisletilecek
   - [x] project.created
   - [x] project.updated
   - [x] task.deleted
@@ -31,22 +31,22 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] workspace.member.capacity_updated
   - [x] workspace.preference_changed
   - [x] export.created
-- [ ] Ortak analytics helpers genisletilecek
-  - [ ] portfolio health
-  - [ ] team workload
+- [x] Ortak analytics helpers genisletilecek
+  - [x] portfolio health
+  - [x] team workload
   - [x] milestone progress
   - [x] risk severity
-  - [ ] weekly reporting metrics
+  - [x] weekly reporting metrics
 
 ## Phase 1: Core P0 Product Surfaces
 
-- [ ] Dashboard ikinci iterasyon
+- [x] Dashboard ikinci iterasyon
   - [x] Quick actions bar
   - [x] Upcoming deadlines timeline
   - [x] Recent blockers
   - [x] Client risk visibility
   - [x] Weekly completion trend chart
-- [ ] Notifications Center yeniden tasarlanacak
+- [x] Notifications Center yeniden tasarlanacak
   - [x] Action Required tab
   - [x] Activity tab
   - [x] Digest tab
@@ -56,7 +56,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] archive
   - [x] snooze
   - [x] notification rule controls
-- [ ] Projects portfolio ikinci iterasyon
+- [x] Projects portfolio ikinci iterasyon
   - [x] owner/client/type alanlari gosterilecek
   - [x] saved views kalici hale getirilecek
   - [x] portfolio risk trend
@@ -69,7 +69,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Step 3: Goals and delivery
   - [x] Template-based project setup
   - [x] Starter tasks auto-generation
-- [ ] My Tasks ekraninin execution inbox seviyesine cikmasi
+- [x] My Tasks ekraninin execution inbox seviyesine cikmasi
   - [x] today
   - [x] overdue
   - [x] review waiting
@@ -77,14 +77,14 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] recently completed
   - [x] personal workload summary
   - [x] filters and saved segments
-- [ ] Audit / Activity ekraninin enterprise timeline'a donusmesi
+- [x] Audit / Activity ekraninin enterprise timeline'a donusmesi
   - [x] actor filter
   - [x] entity filter
   - [x] severity filter
   - [x] date range filter
   - [x] diff preview
   - [x] export CSV / JSON
-- [ ] Settings ekraninin tabbed console'a donusmesi
+- [x] Settings ekraninin tabbed console'a donusmesi
   - [x] Workspace
   - [x] Profile
   - [x] Team
@@ -93,7 +93,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Integrations
   - [x] Billing
   - [x] Security
-- [ ] Project detail sayfasi yeniden yapilandirilacak
+- [x] Project detail sayfasi yeniden yapilandirilacak
   - [x] Overview
   - [x] Board
   - [x] List
@@ -124,19 +124,19 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] weekly capacity
   - [x] workload heatmap
   - [x] overloaded / underloaded signals
-- [ ] Reports modulu
+- [x] Reports modulu
   - [x] weekly status report
   - [x] portfolio risk report
   - [x] team workload report
   - [x] delivery performance report
   - [x] shareable summary view
-- [ ] Smart onboarding flow
+- [x] Smart onboarding flow
   - [x] guided checklist
   - [x] demo workspace state
   - [x] create-first-project flow
   - [x] add-team-member flow
   - [x] save-first-view flow
-- [ ] Global command/search center
+- [x] Global command/search center
   - [x] project search
   - [x] task search
   - [x] people search
@@ -145,24 +145,24 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
 
 ## Phase 3: P2 Growth Modules
 
-- [ ] Client/company layer
-  - [ ] client health
-  - [ ] client owner
-  - [ ] project-to-client relationship
-  - [ ] notes / contract / retainer fields
-- [ ] Client-facing portal groundwork
-- [ ] Billing / plan / usage controls
-- [ ] Integrations
-  - [ ] Slack
-  - [ ] Google Calendar
-  - [ ] Webhooks / API keys
+- [x] Client/company layer
+  - [x] client health
+  - [x] client owner
+  - [x] project-to-client relationship
+  - [x] notes / contract / retainer fields
+- [x] Client-facing portal groundwork
+- [x] Billing / plan / usage controls
+- [x] Integrations
+  - [x] Slack
+  - [x] Google Calendar
+  - [x] Webhooks / API keys
 - [ ] Automations engine
 - [ ] Executive weekly digest
 - [ ] AI-assisted summaries
 
 ## Information Architecture
 
-- [ ] Main nav target
+- [x] Main nav target
   - [x] Dashboard
   - [x] Projects
   - [x] Tasks

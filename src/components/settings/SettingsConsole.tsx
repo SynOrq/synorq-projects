@@ -22,6 +22,17 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  buildWorkspaceBillingSummary,
+  WORKSPACE_BILLING_STATUS_OPTIONS,
+  WORKSPACE_PLAN_OPTIONS,
+} from "@/lib/billing";
+import {
+  summarizeWorkspaceIntegrations,
+  WORKSPACE_INTEGRATION_PROVIDERS,
+  WORKSPACE_INTEGRATION_STATUS_OPTIONS,
+  WORKSPACE_WEBHOOK_EVENTS,
+} from "@/lib/integrations";
 
 type MemberRecord = {
   id: string;
@@ -63,6 +74,27 @@ type Props = {
     activityAlertsEnabled: boolean;
     weeklyDigestEnabled: boolean;
   };
+  initialBilling: {
+    plan: "TEAM" | "GROWTH" | "SCALE" | "ENTERPRISE";
+    status: "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELED";
+    billingEmail: string | null;
+    seatCap: number | null;
+    allowOverage: boolean;
+    usageAlertThresholdPct: number;
+    renewalDate: Date | string | null;
+  };
+  usageTelemetry: {
+    projectCount: number;
+    publishedPortalCount: number;
+    exportCountLast30Days: number;
+  };
+  initialIntegrations: Array<{
+    provider: "SLACK" | "GOOGLE_CALENDAR" | "WEBHOOK" | "API_KEY";
+    status: "DISCONNECTED" | "CONNECTED" | "ERROR";
+    label: string | null;
+    config: Record<string, unknown> | null;
+    lastSyncedAt: Date | string | null;
+  }>;
   initialMembers: MemberRecord[];
   currentUserId: string;
   currentAccess: {
@@ -134,6 +166,9 @@ export default function SettingsConsole({
   initialWorkspace,
   initialUser,
   initialPreferences,
+  initialBilling,
+  usageTelemetry,
+  initialIntegrations,
   initialMembers,
   currentUserId,
   currentAccess,
@@ -151,6 +186,61 @@ export default function SettingsConsole({
   const [riskAlertsEnabled, setRiskAlertsEnabled] = useState(initialPreferences.riskAlertsEnabled);
   const [activityAlertsEnabled, setActivityAlertsEnabled] = useState(initialPreferences.activityAlertsEnabled);
   const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(initialPreferences.weeklyDigestEnabled);
+  const [billingPlan, setBillingPlan] = useState<Props["initialBilling"]["plan"]>(initialBilling.plan);
+  const [billingStatus, setBillingStatus] = useState<Props["initialBilling"]["status"]>(initialBilling.status);
+  const [billingEmail, setBillingEmail] = useState(initialBilling.billingEmail ?? "");
+  const [seatCap, setSeatCap] = useState(initialBilling.seatCap ? String(initialBilling.seatCap) : "");
+  const [allowOverage, setAllowOverage] = useState(initialBilling.allowOverage);
+  const [usageAlertThresholdPct, setUsageAlertThresholdPct] = useState(String(initialBilling.usageAlertThresholdPct));
+  const [renewalDate, setRenewalDate] = useState(
+    initialBilling.renewalDate ? new Date(initialBilling.renewalDate).toISOString().slice(0, 10) : ""
+  );
+  const [integrations, setIntegrations] = useState<
+    Record<
+      Props["initialIntegrations"][number]["provider"],
+      {
+        provider: Props["initialIntegrations"][number]["provider"];
+        status: Props["initialIntegrations"][number]["status"];
+        label: string;
+        config: Record<string, unknown>;
+        lastSyncedAt: string;
+      }
+    >
+  >(() => {
+    const base = Object.fromEntries(
+      WORKSPACE_INTEGRATION_PROVIDERS.map((item) => [
+        item.value,
+        {
+          provider: item.value,
+          status: "DISCONNECTED" as const,
+          label: "",
+          config: {},
+          lastSyncedAt: "",
+        },
+      ])
+    ) as Record<
+      Props["initialIntegrations"][number]["provider"],
+      {
+        provider: Props["initialIntegrations"][number]["provider"];
+        status: Props["initialIntegrations"][number]["status"];
+        label: string;
+        config: Record<string, unknown>;
+        lastSyncedAt: string;
+      }
+    >;
+
+    for (const integration of initialIntegrations) {
+      base[integration.provider] = {
+        provider: integration.provider,
+        status: integration.status,
+        label: integration.label ?? "",
+        config: integration.config ?? {},
+        lastSyncedAt: integration.lastSyncedAt ? new Date(integration.lastSyncedAt).toISOString().slice(0, 10) : "",
+      };
+    }
+
+    return base;
+  });
   const [members, setMembers] = useState(initialMembers);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<MemberRecord["role"]>("MEMBER");
@@ -158,15 +248,22 @@ export default function SettingsConsole({
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [preferencesMessage, setPreferencesMessage] = useState<string | null>(null);
   const [teamMessage, setTeamMessage] = useState<string | null>(null);
+  const [billingMessage, setBillingMessage] = useState<string | null>(null);
+  const [integrationMessage, setIntegrationMessage] = useState<string | null>(null);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [preferencesError, setPreferencesError] = useState<string | null>(null);
   const [teamError, setTeamError] = useState<string | null>(null);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  const [integrationError, setIntegrationError] = useState<string | null>(null);
   const [isWorkspacePending, startWorkspaceTransition] = useTransition();
   const [isProfilePending, startProfileTransition] = useTransition();
   const [isPreferencesPending, startPreferencesTransition] = useTransition();
+  const [isBillingPending, startBillingTransition] = useTransition();
+  const [isIntegrationPending, startIntegrationTransition] = useTransition();
   const [isInvitePending, startInviteTransition] = useTransition();
   const [savingMemberId, setSavingMemberId] = useState<string | null>(null);
+  const [savingIntegrationProvider, setSavingIntegrationProvider] = useState<string | null>(null);
 
   const teamSummary = useMemo(() => {
     const admins = members.filter((member) => member.role === "ADMIN").length;
@@ -181,6 +278,49 @@ export default function SettingsConsole({
 
   const currentMember = members.find((member) => member.userId === currentUserId) ?? null;
   const adminCount = teamSummary.admins + (currentAccess.isOwner ? 1 : 0);
+  const billingSummary = useMemo(
+    () =>
+      buildWorkspaceBillingSummary({
+        plan: billingPlan,
+        status: billingStatus,
+        seatCap: seatCap ? Number(seatCap) : null,
+        allowOverage,
+        usageAlertThresholdPct: Number(usageAlertThresholdPct) || initialBilling.usageAlertThresholdPct,
+        activeMembers: teamSummary.total,
+        viewerMembers: teamSummary.viewers,
+        adminMembers: adminCount,
+        projectCount: usageTelemetry.projectCount,
+        publishedPortalCount: usageTelemetry.publishedPortalCount,
+        exportCountLast30Days: usageTelemetry.exportCountLast30Days,
+        weeklyDigestEnabled,
+      }),
+    [
+      adminCount,
+      allowOverage,
+      billingPlan,
+      billingStatus,
+      initialBilling.usageAlertThresholdPct,
+      seatCap,
+      teamSummary.total,
+      teamSummary.viewers,
+      usageAlertThresholdPct,
+      usageTelemetry.exportCountLast30Days,
+      usageTelemetry.projectCount,
+      usageTelemetry.publishedPortalCount,
+      weeklyDigestEnabled,
+    ]
+  );
+  const integrationSummary = useMemo(
+    () =>
+      summarizeWorkspaceIntegrations(
+        Object.values(integrations).map((integration) => ({
+          provider: integration.provider,
+          status: integration.status,
+          config: integration.config,
+        }))
+      ),
+    [integrations]
+  );
   const securitySignals = [
     {
       label: "Current access",
@@ -199,7 +339,7 @@ export default function SettingsConsole({
     },
   ];
 
-  function clearMessages(scope: "workspace" | "profile" | "notifications" | "team") {
+  function clearMessages(scope: "workspace" | "profile" | "notifications" | "team" | "billing" | "integrations") {
     if (scope === "workspace") {
       setWorkspaceMessage(null);
       setWorkspaceError(null);
@@ -213,6 +353,16 @@ export default function SettingsConsole({
     if (scope === "notifications") {
       setPreferencesMessage(null);
       setPreferencesError(null);
+      return;
+    }
+    if (scope === "billing") {
+      setBillingMessage(null);
+      setBillingError(null);
+      return;
+    }
+    if (scope === "integrations") {
+      setIntegrationMessage(null);
+      setIntegrationError(null);
       return;
     }
     setTeamMessage(null);
@@ -307,6 +457,110 @@ export default function SettingsConsole({
     });
   }
 
+  function saveBilling() {
+    startBillingTransition(async () => {
+      clearMessages("billing");
+
+      try {
+        const res = await fetch("/api/workspace/billing", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            plan: billingPlan,
+            status: billingStatus,
+            billingEmail,
+            seatCap: seatCap ? Number(seatCap) : null,
+            allowOverage,
+            usageAlertThresholdPct: Number(usageAlertThresholdPct),
+            renewalDate: renewalDate || null,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error ?? "Billing ayarlari guncellenemedi.");
+        }
+
+        setBillingPlan(data.billing.plan);
+        setBillingStatus(data.billing.status);
+        setBillingEmail(data.billing.billingEmail ?? "");
+        setSeatCap(data.billing.seatCap ? String(data.billing.seatCap) : "");
+        setAllowOverage(Boolean(data.billing.allowOverage));
+        setUsageAlertThresholdPct(String(data.billing.usageAlertThresholdPct ?? 85));
+        setRenewalDate(data.billing.renewalDate ? new Date(data.billing.renewalDate).toISOString().slice(0, 10) : "");
+        setBillingMessage("Billing ayarlari kaydedildi.");
+        router.refresh();
+      } catch (err) {
+        setBillingError(err instanceof Error ? err.message : "Billing ayarlari guncellenemedi.");
+      }
+    });
+  }
+
+  function updateIntegration(
+    provider: Props["initialIntegrations"][number]["provider"],
+    patch: Partial<{
+      status: Props["initialIntegrations"][number]["status"];
+      label: string;
+      config: Record<string, unknown>;
+      lastSyncedAt: string;
+    }>
+  ) {
+    setIntegrations((current) => ({
+      ...current,
+      [provider]: {
+        ...current[provider],
+        ...patch,
+        config: {
+          ...current[provider].config,
+          ...(patch.config ?? {}),
+        },
+      },
+    }));
+  }
+
+  function saveIntegration(provider: Props["initialIntegrations"][number]["provider"]) {
+    startIntegrationTransition(async () => {
+      clearMessages("integrations");
+      setSavingIntegrationProvider(provider);
+
+      try {
+        const integration = integrations[provider];
+        const res = await fetch(`/api/workspace/integrations/${provider.toLowerCase()}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: integration.status,
+            label: integration.label || null,
+            lastSyncedAt: integration.lastSyncedAt || null,
+            ...integration.config,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error ?? "Integration kaydi guncellenemedi.");
+        }
+
+        setIntegrations((current) => ({
+          ...current,
+          [provider]: {
+            ...current[provider],
+            status: data.integration.status,
+            label: data.integration.label ?? "",
+            config: (data.integration.config as Record<string, unknown> | null) ?? {},
+            lastSyncedAt: data.integration.lastSyncedAt ? new Date(data.integration.lastSyncedAt).toISOString().slice(0, 10) : "",
+          },
+        }));
+        setIntegrationMessage(`${provider} integration ayari kaydedildi.`);
+        router.refresh();
+      } catch (err) {
+        setIntegrationError(err instanceof Error ? err.message : "Integration kaydi guncellenemedi.");
+      } finally {
+        setSavingIntegrationProvider(null);
+      }
+    });
+  }
+
   function inviteMember() {
     startInviteTransition(async () => {
       clearMessages("team");
@@ -376,25 +630,26 @@ export default function SettingsConsole({
   }
 
   return (
-    <div className="mx-auto max-w-7xl p-6">
+    <div className="min-h-full">
+      <div className="p-8">
       <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="space-y-5 self-start rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm xl:sticky xl:top-24">
-          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-700">
+        <aside className="space-y-5 self-start rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:sticky xl:top-24">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-indigo-700">
               <PanelsTopLeft size={13} />
               Settings Console
             </div>
-            <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Ayarlar</h1>
+            <h1 className="mt-3 text-2xl font-bold text-slate-900">Ayarlar</h1>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Workspace kimligi, ekip erisimi ve bildirim kararlarini tek kontrol yuzeyinde yonetin.
             </p>
           </div>
 
-          <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
             <div className="flex items-center gap-3">
-              <Avatar name={workspaceName} image={workspaceLogoUrl} size="lg" className="rounded-2xl" />
+              <Avatar name={workspaceName} image={workspaceLogoUrl} size="lg" className="rounded-xl" />
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-slate-950">{workspaceName}</div>
+                <div className="truncate text-sm font-semibold text-slate-900">{workspaceName}</div>
                 <div className="truncate text-xs text-slate-500">{initialWorkspace.owner.email}</div>
               </div>
             </div>
@@ -415,7 +670,7 @@ export default function SettingsConsole({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                  className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
                     active
                       ? "border-slate-900 bg-slate-900 text-white shadow-sm"
                       : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
@@ -440,8 +695,8 @@ export default function SettingsConsole({
             })}
           </nav>
 
-          <div className="rounded-[24px] border border-red-100 bg-red-50/40 p-4">
-            <div className="mb-3 text-sm font-semibold text-slate-950">Session</div>
+          <div className="rounded-xl border border-red-100 bg-red-50/40 p-4">
+            <div className="mb-3 text-sm font-semibold text-slate-900">Session</div>
             <div className="text-xs leading-6 text-slate-600">Aktif kullanici: {initialUser.email ?? "Bilinmiyor"}</div>
             <div className="mt-4">
               <form action={logoutAction}>
@@ -457,19 +712,19 @@ export default function SettingsConsole({
         <div className="space-y-6">
           {activeTab === "workspace" && (
             <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-700">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-indigo-700">
                       <Building2 size={13} />
                       Workspace Identity
                     </div>
-                    <h2 className="mt-3 text-xl font-black text-slate-950">Brand ve operating context</h2>
+                    <h2 className="mt-3 text-xl font-semibold text-slate-900">Brand ve operating context</h2>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
                       Shell icinde gorunen kimligi ve ekiplerin baglandigi ana tanimi guncelleyin.
                     </p>
                   </div>
-                  <Avatar name={workspaceName} image={workspaceLogoUrl} size="lg" className="rounded-2xl" />
+                  <Avatar name={workspaceName} image={workspaceLogoUrl} size="lg" className="rounded-xl" />
                 </div>
 
                 <div className="mt-6 space-y-4">
@@ -506,8 +761,8 @@ export default function SettingsConsole({
               </div>
 
               <div className="space-y-4">
-                <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="text-sm font-semibold text-slate-950">Operating snapshot</div>
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="text-sm font-semibold text-slate-900">Operating snapshot</div>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <SnapshotCard label="Owner" value={initialWorkspace.owner.name ?? "Workspace owner"} note={initialWorkspace.owner.email} />
                     <SnapshotCard label="Created" value={formatDate(initialWorkspace.createdAt)} note="Workspace start date" />
@@ -520,13 +775,13 @@ export default function SettingsConsole({
                   </div>
                 </div>
 
-                <div className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+                <div className="rounded-xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
                   <div className="text-sm font-semibold text-white">Governance shortcut</div>
                   <p className="mt-2 text-sm leading-6 text-slate-300">
                     Workspace degisikliklerini Activity ve Audit timeline icinden izleyin.
                   </p>
                   <div className="mt-4">
-                    <Button asChild variant="secondary" className="bg-white text-slate-950 hover:bg-slate-100">
+                    <Button asChild variant="secondary" className="bg-white text-slate-900 hover:bg-slate-100">
                       <a href="/audit">Audit console</a>
                     </Button>
                   </div>
@@ -537,11 +792,11 @@ export default function SettingsConsole({
 
           {activeTab === "profile" && (
             <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-              <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center gap-4">
                   <Avatar name={profileName || initialUser.email} image={profileImage} size="lg" />
                   <div>
-                    <h2 className="text-xl font-black text-slate-950">Profile identity</h2>
+                    <h2 className="text-xl font-semibold text-slate-900">Profile identity</h2>
                     <p className="mt-1 text-sm leading-6 text-slate-600">
                       Avatar ve isim, task kartlari, comment akisi ve audit timeline icinde kullanilir.
                     </p>
@@ -572,8 +827,8 @@ export default function SettingsConsole({
               </div>
 
               <div className="space-y-4">
-                <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="text-sm font-semibold text-slate-950">Account snapshot</div>
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="text-sm font-semibold text-slate-900">Account snapshot</div>
                   <div className="mt-4 space-y-3">
                     <SnapshotCard label="Primary email" value={initialUser.email ?? "-"} note="Credential identity" />
                     <SnapshotCard
@@ -589,8 +844,8 @@ export default function SettingsConsole({
                   </div>
                 </div>
 
-                <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 shadow-sm">
-                  <div className="text-sm font-semibold text-slate-950">Identity usage</div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+                  <div className="text-sm font-semibold text-slate-900">Identity usage</div>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
                     Profil guncellemesi sonraki route yenilemesinde board kartlari, comments ve activity timeline icine yansir.
                   </p>
@@ -608,8 +863,8 @@ export default function SettingsConsole({
               </div>
 
               <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-                <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-slate-900">
                     <UserPlus size={18} className="text-indigo-600" />
                     Team invite
                   </div>
@@ -654,10 +909,10 @@ export default function SettingsConsole({
                   {teamMessage && <Notice tone="success">{teamMessage}</Notice>}
                 </div>
 
-                <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm">
+                <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
                   <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
                     <div>
-                      <h2 className="text-lg font-black text-slate-950">Role matrix</h2>
+                      <h2 className="text-lg font-semibold text-slate-900">Role matrix</h2>
                       <p className="mt-1 text-sm text-slate-500">Uyeleri goruntuleyin, rol degistirin ve sahipligi koruyun.</p>
                     </div>
                     <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
@@ -688,10 +943,10 @@ export default function SettingsConsole({
                                 <div className="flex items-center gap-3">
                                   <Avatar name={member.user.name ?? member.user.email} image={member.user.image} size="sm" />
                                   <div className="min-w-0">
-                                    <div className="truncate font-semibold text-slate-950">
+                                    <div className="truncate font-semibold text-slate-900">
                                       {member.user.name ?? "Kullanici"}
                                       {isOwner && (
-                                        <span className="ml-2 rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                                        <span className="ml-2 rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
                                           Owner
                                         </span>
                                       )}
@@ -742,19 +997,19 @@ export default function SettingsConsole({
 
           {activeTab === "permissions" && (
             <div className="space-y-6">
-              <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-700">
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
                   <KeyRound size={13} />
                   Access Model
                 </div>
-                <h2 className="mt-3 text-xl font-black text-slate-950">Role-based access policy</h2>
+                <h2 className="mt-3 text-xl font-semibold text-slate-900">Role-based access policy</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   Synorq v1 icin yetki modeli workspace rolune dayanir. Ayarlar, ekip yonetimi ve governance owner/admin katmaninda tutulur.
                 </p>
 
                 <div className="mt-6 grid gap-4 lg:grid-cols-2">
                   {(["OWNER", "ADMIN", "MEMBER", "VIEWER"] as const).map((roleKey) => (
-                    <div key={roleKey} className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                    <div key={roleKey} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                       <div className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${teamRoleCopy[roleKey].tone}`}>
                         {teamRoleCopy[roleKey].label}
                       </div>
@@ -778,12 +1033,12 @@ export default function SettingsConsole({
 
           {activeTab === "notifications" && (
             <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-              <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-700">
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-indigo-700">
                   <BellRing size={13} />
                   Signal Rules
                 </div>
-                <h2 className="mt-3 text-xl font-black text-slate-950">Notification posture</h2>
+                <h2 className="mt-3 text-xl font-semibold text-slate-900">Notification posture</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   Risk, activity ve digest sinyallerini bildirim merkezi ile uyumlu sekilde yonetin.
                 </p>
@@ -809,7 +1064,7 @@ export default function SettingsConsole({
                       onChange: setWeeklyDigestEnabled,
                     },
                   ].map((item) => (
-                    <label key={item.label} className="flex items-start gap-3 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+                    <label key={item.label} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
                       <input
                         type="checkbox"
                         checked={item.checked}
@@ -836,8 +1091,8 @@ export default function SettingsConsole({
               </div>
 
               <div className="space-y-4">
-                <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="text-sm font-semibold text-slate-950">Signal routing</div>
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="text-sm font-semibold text-slate-900">Signal routing</div>
                   <div className="mt-4 space-y-3">
                     <SnapshotCard label="Action Required" value={riskAlertsEnabled ? "Enabled" : "Muted"} note="Critical delivery issues and mentions" />
                     <SnapshotCard label="Activity" value={activityAlertsEnabled ? "Enabled" : "Muted"} note="Comments, moves and collaboration events" />
@@ -845,8 +1100,8 @@ export default function SettingsConsole({
                   </div>
                 </div>
 
-                <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 shadow-sm">
-                  <div className="text-sm font-semibold text-slate-950">Notification surfaces</div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+                  <div className="text-sm font-semibold text-slate-900">Notification surfaces</div>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
                     Bu tercihler notification center, dashboard signal kartlari ve activity timeline ile birlikte calisir.
                   </p>
@@ -858,64 +1113,210 @@ export default function SettingsConsole({
           {activeTab === "integrations" && (
             <div className="space-y-6">
               <section className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
-                <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-700">
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
                     <Link2 size={13} />
                     Integration readiness
                   </div>
-                  <h2 className="mt-3 text-xl font-black text-slate-950">Delivery stack connection posture</h2>
+                  <h2 className="mt-3 text-xl font-semibold text-slate-900">Delivery stack connection posture</h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Slack, Calendar ve webhook kanallari icin operasyon hazirlik cizgisi burada tutulur. v1 katmani governance,
-                    routing ve event modelini hazirlar.
+                    Slack, Calendar, webhook ve API key baglantilari workspace seviyesinde burada kaydedilir. Bu katman
+                    governance ve routing kararlarini persisted hale getirir.
                   </p>
 
                   <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                    <SnapshotCard label="Slack" value="Ready for policy" note="Action Required ve digest akisi icin aday kanal." />
-                    <SnapshotCard label="Calendar" value="Timeline-aware" note="Due date ve milestone sync modeli hazir." />
-                    <SnapshotCard label="Webhooks" value="Event-driven" note="Audit ve activity event&apos;leri hook katmanina uygun." />
+                    <SnapshotCard label="Connected" value={String(integrationSummary.connected)} note="Aktif provider baglantisi" />
+                    <SnapshotCard label="Configured" value={String(integrationSummary.configured)} note="Draft veya live integration kaydi" />
+                    <SnapshotCard label="Errors" value={String(integrationSummary.errors)} note="Attention isteyen provider" />
                   </div>
 
-                  <div className="mt-6 space-y-3">
-                    <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
-                      <div className="flex items-center gap-2 text-sm font-black text-slate-950">
-                        <Webhook size={16} className="text-cyan-600" />
-                        Event contract
-                      </div>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
-                        `project.updated`, `task.assignee_changed`, `risk.created` ve `export.created` event&apos;leri entegrasyon
-                        katmanina tasinabilecek normalized audit akisini olusturur.
-                      </p>
-                    </div>
-                    <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
-                      <div className="text-sm font-black text-slate-950">Recommended rollout</div>
-                      <div className="mt-2 text-sm leading-6 text-slate-600">
-                        1. Slack action required routing
-                        <br />
-                        2. Calendar milestone sync
-                        <br />
-                        3. Webhook/API key automation surface
-                      </div>
-                    </div>
+                  <div className="mt-6 space-y-4">
+                    {WORKSPACE_INTEGRATION_PROVIDERS.map((provider) => {
+                      const integration = integrations[provider.value];
+                      const webhookEvents = Array.isArray(integration.config.events)
+                        ? (integration.config.events as string[])
+                        : [];
+
+                      return (
+                        <div key={provider.value} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                {provider.value === "WEBHOOK" ? <Webhook size={16} className="text-cyan-600" /> : <Link2 size={16} className="text-cyan-600" />}
+                                {provider.label}
+                              </div>
+                              <div className="mt-1 text-xs leading-6 text-slate-500">{provider.note}</div>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => saveIntegration(provider.value)}
+                              loading={isIntegrationPending && savingIntegrationProvider === provider.value}
+                              disabled={!canManageWorkspace}
+                            >
+                              Kaydet
+                            </Button>
+                          </div>
+
+                          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                              <label className="text-sm font-medium text-slate-700">Status</label>
+                              <select
+                                value={integration.status}
+                                onChange={(event) =>
+                                  updateIntegration(provider.value, {
+                                    status: event.target.value as Props["initialIntegrations"][number]["status"],
+                                  })
+                                }
+                                disabled={!canManageWorkspace || isIntegrationPending}
+                                className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                              >
+                                {WORKSPACE_INTEGRATION_STATUS_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <Field
+                              label="Label"
+                              value={integration.label}
+                              onChange={(value) => updateIntegration(provider.value, { label: value })}
+                              disabled={!canManageWorkspace || isIntegrationPending}
+                              placeholder={`${provider.label} workspace config`}
+                            />
+                            <Field
+                              label="Last sync"
+                              type="date"
+                              value={integration.lastSyncedAt}
+                              onChange={(value) => updateIntegration(provider.value, { lastSyncedAt: value })}
+                              disabled={!canManageWorkspace || isIntegrationPending}
+                            />
+                            {provider.value === "SLACK" && (
+                              <Field
+                                label="Channel"
+                                value={String(integration.config.channel ?? "")}
+                                onChange={(value) => updateIntegration(provider.value, { config: { channel: value } })}
+                                disabled={!canManageWorkspace || isIntegrationPending}
+                                placeholder="#delivery-alerts"
+                              />
+                            )}
+                            {provider.value === "GOOGLE_CALENDAR" && (
+                              <>
+                                <Field
+                                  label="Calendar ID"
+                                  value={String(integration.config.calendarId ?? "")}
+                                  onChange={(value) => updateIntegration(provider.value, { config: { calendarId: value } })}
+                                  disabled={!canManageWorkspace || isIntegrationPending}
+                                  placeholder="team@group.calendar.google.com"
+                                />
+                                <Field
+                                  label="Sync window"
+                                  type="number"
+                                  value={String(integration.config.syncWindowDays ?? "")}
+                                  onChange={(value) => updateIntegration(provider.value, { config: { syncWindowDays: value } })}
+                                  disabled={!canManageWorkspace || isIntegrationPending}
+                                  placeholder="21"
+                                />
+                              </>
+                            )}
+                            {provider.value === "WEBHOOK" && (
+                              <>
+                                <Field
+                                  label="Endpoint"
+                                  type="url"
+                                  value={String(integration.config.endpoint ?? "")}
+                                  onChange={(value) => updateIntegration(provider.value, { config: { endpoint: value } })}
+                                  disabled={!canManageWorkspace || isIntegrationPending}
+                                  placeholder="https://hooks.example.com/synorq"
+                                />
+                                <Field
+                                  label="Secret preview"
+                                  value={String(integration.config.secretPreview ?? "")}
+                                  onChange={(value) => updateIntegration(provider.value, { config: { secretPreview: value } })}
+                                  disabled={!canManageWorkspace || isIntegrationPending}
+                                  placeholder="whsec_****"
+                                />
+                                <div className="sm:col-span-2 space-y-2">
+                                  <div className="text-sm font-medium text-slate-700">Events</div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {WORKSPACE_WEBHOOK_EVENTS.map((eventName) => (
+                                      <label key={eventName} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                                        <input
+                                          type="checkbox"
+                                          checked={webhookEvents.includes(eventName)}
+                                          onChange={(event) =>
+                                            updateIntegration(provider.value, {
+                                              config: {
+                                                events: event.target.checked
+                                                  ? [...webhookEvents, eventName]
+                                                  : webhookEvents.filter((item) => item !== eventName),
+                                              },
+                                            })
+                                          }
+                                          disabled={!canManageWorkspace || isIntegrationPending}
+                                          className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        {eventName}
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                            {provider.value === "API_KEY" && (
+                              <>
+                                <Field
+                                  label="Key name"
+                                  value={String(integration.config.keyName ?? "")}
+                                  onChange={(value) => updateIntegration(provider.value, { config: { keyName: value } })}
+                                  disabled={!canManageWorkspace || isIntegrationPending}
+                                  placeholder="automation-bot"
+                                />
+                                <Field
+                                  label="Secret preview"
+                                  value={String(integration.config.secretPreview ?? "")}
+                                  onChange={(value) => updateIntegration(provider.value, { config: { secretPreview: value } })}
+                                  disabled={!canManageWorkspace || isIntegrationPending}
+                                  placeholder="sk_live_****"
+                                />
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
+
+                  {!canManageWorkspace && <Notice tone="warning">Integration ayarlari sadece owner veya admin tarafindan guncellenebilir.</Notice>}
+                  {integrationError && <Notice tone="danger">{integrationError}</Notice>}
+                  {integrationMessage && <Notice tone="success">{integrationMessage}</Notice>}
                 </div>
 
                 <div className="space-y-4">
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                    <div className="text-sm font-semibold text-slate-950">Integration guardrails</div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="text-sm font-semibold text-slate-900">Integration guardrails</div>
                     <div className="mt-4 space-y-3">
-                      <SnapshotCard label="Notification source" value="Workspace state" note="Rule toggles Settings ve Notification Console ile ortak çalışır." />
-                      <SnapshotCard label="Audit trace" value="Required" note="Her entegrasyon aksiyonu audit timeline'a düşecek şekilde tasarlanır." />
+                      <SnapshotCard label="Notification source" value="Workspace state" note="Rule toggles Settings ve Notification Console ile ortak calisir." />
+                      <SnapshotCard label="Audit trace" value="Required" note="Her integration mutasyonu activity ve audit timeline'a duser." />
                       <SnapshotCard label="Access model" value={canManageWorkspace ? "Admin-managed" : "Restricted"} note="Baglanti aktivasyonu owner/admin katmaninda tutulur." />
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
-                    <div className="text-sm font-semibold text-white">What ships next</div>
-                    <ul className="mt-5 space-y-3 text-sm text-slate-200">
-                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Slack escalation routing for critical risk and overdue delivery signals.</li>
-                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Google Calendar sync for milestone and due-date windows.</li>
-                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Webhook/API key layer for outbound workflow automation.</li>
-                    </ul>
+                  <div className="rounded-xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+                    <div className="text-sm font-semibold text-white">Integration posture</div>
+                    <div className="mt-5 grid gap-3 text-sm text-slate-200">
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                        Slack ve Calendar baglantilari status + target config ile persisted tutulur.
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                        Webhook olay secimi `workspace.billing_updated` dahil normalized event kontratini kullanir.
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                        API key layer secret preview ve label ile automation entry point olarak modellenir.
+                      </div>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -925,54 +1326,148 @@ export default function SettingsConsole({
           {activeTab === "billing" && (
             <div className="space-y-6">
               <section className="grid gap-6 lg:grid-cols-[1.04fr_0.96fr]">
-                <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
                     <CreditCard size={13} />
                     Billing posture
                   </div>
-                  <h2 className="mt-3 text-xl font-black text-slate-950">Seat, plan ve usage kontrol katmani</h2>
+                  <h2 className="mt-3 text-xl font-semibold text-slate-900">Seat, plan ve usage kontrol katmani</h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    v1&apos;de faturalama akisi aktif degil; fakat owner/admin katmani icin seat governance, plan guardrail ve
-                    usage okunurlugu bu yuzeyde modellenir.
+                    Workspace plani, seat cap ve usage threshold kararlari burada tutulur. Bu katman owner/admin tarafinda
+                    commercial guardrail olarak calisir.
                   </p>
 
-                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                    <MetricCard label="Plan posture" value="Workspace beta" note="Commercial controls sonraki rollout katmaninda acilacak." />
-                    <MetricCard label="Seat baseline" value={String(teamSummary.total)} note={`${teamSummary.viewers} viewer, ${adminCount} elevated access`} />
-                    <MetricCard label="Billing owner" value={currentAccess.isOwner ? "You" : "Owner"} note="Workspace sahipligi commercial authority olarak tanimlanir." />
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-slate-700">Plan</label>
+                      <select
+                        value={billingPlan}
+                        onChange={(event) => setBillingPlan(event.target.value as Props["initialBilling"]["plan"])}
+                        disabled={!canManageWorkspace || isBillingPending}
+                        className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                      >
+                        {WORKSPACE_PLAN_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-slate-700">Billing status</label>
+                      <select
+                        value={billingStatus}
+                        onChange={(event) => setBillingStatus(event.target.value as Props["initialBilling"]["status"])}
+                        disabled={!canManageWorkspace || isBillingPending}
+                        className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                      >
+                        {WORKSPACE_BILLING_STATUS_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <Field
+                      label="Billing email"
+                      type="email"
+                      value={billingEmail}
+                      onChange={setBillingEmail}
+                      disabled={!canManageWorkspace || isBillingPending}
+                      placeholder="finance@company.com"
+                    />
+                    <Field
+                      label="Renewal date"
+                      type="date"
+                      value={renewalDate}
+                      onChange={setRenewalDate}
+                      disabled={!canManageWorkspace || isBillingPending}
+                    />
+                    <Field
+                      label="Seat cap"
+                      type="number"
+                      value={seatCap}
+                      onChange={setSeatCap}
+                      disabled={!canManageWorkspace || isBillingPending}
+                      placeholder="12"
+                    />
+                    <Field
+                      label="Usage alert threshold %"
+                      type="number"
+                      value={usageAlertThresholdPct}
+                      onChange={setUsageAlertThresholdPct}
+                      disabled={!canManageWorkspace || isBillingPending}
+                      placeholder="85"
+                    />
                   </div>
 
-                  <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-                    <div className="flex items-center gap-2 text-sm font-black text-slate-950">
+                  <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                       <Receipt size={16} className="text-emerald-600" />
                       Usage guardrails
                     </div>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <SnapshotCard label="Member seats" value={`${teamSummary.total} active`} note="Ekip boyutu commercial seat metrikleri icin hazır." />
-                      <SnapshotCard label="Admin density" value={`${adminCount}`} note="Yonetici/yetki orani governance maliyetini etkiler." />
-                      <SnapshotCard label="Digest load" value={weeklyDigestEnabled ? "Enabled" : "Disabled"} note="Reporting seviyeleri gelecekte usage metriklerine bağlanabilir." />
-                      <SnapshotCard label="Export footprint" value="Tracked" note="Audit export aksiyonlari artik event olarak loglanir." />
+                    <div className="mt-4 space-y-3">
+                      <label className="flex items-start gap-3 rounded-[20px] border border-slate-200 bg-white px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={allowOverage}
+                          onChange={(event) => setAllowOverage(event.target.checked)}
+                          disabled={!canManageWorkspace || isBillingPending}
+                          className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <div>
+                          <div className="text-sm font-semibold text-slate-900">Allow seat overage</div>
+                          <div className="mt-1 text-xs leading-6 text-slate-500">
+                            Seat cap asildiginda workspace davet akisini bloklamak yerine overage sinyali uret.
+                          </div>
+                        </div>
+                      </label>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <SnapshotCard label="Active seats" value={`${billingSummary.metrics.activeMembers}`} note={`${billingSummary.metrics.viewerMembers} viewer, ${billingSummary.metrics.elevatedSeats} elevated`} />
+                        <SnapshotCard label="Seat usage" value={seatCap ? `%${billingSummary.metrics.seatUsagePct}` : "Uncapped"} note={seatCap ? `${billingSummary.metrics.overageSeats} overage` : "Seat limiti tanimsiz"} />
+                        <SnapshotCard label="Published portals" value={String(billingSummary.metrics.publishedPortalCount)} note="Client-facing share surface" />
+                        <SnapshotCard label="Exports 30d" value={String(billingSummary.metrics.exportCountLast30Days)} note="Audit/export usage footprint" />
+                      </div>
                     </div>
+                  </div>
+
+                  {!canManageWorkspace && <Notice tone="warning">Billing ayarlari sadece owner veya admin tarafindan guncellenebilir.</Notice>}
+                  {billingError && <Notice tone="danger">{billingError}</Notice>}
+                  {billingMessage && <Notice tone="success">{billingMessage}</Notice>}
+
+                  <div className="mt-5">
+                    <Button onClick={saveBilling} loading={isBillingPending} disabled={!canManageWorkspace}>
+                      Billing ayarlarini kaydet
+                    </Button>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                    <div className="text-sm font-semibold text-slate-950">Commercial checkpoints</div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="text-sm font-semibold text-slate-900">Commercial checkpoints</div>
                     <div className="mt-4 space-y-3">
-                      <SnapshotCard label="Owner authority" value={currentAccess.isOwner ? "Active" : "Owner-only"} note="Plan ve invoice mutasyonlari owner seviyesinde tutulacak." />
-                      <SnapshotCard label="Member governance" value={canManageMembers ? "Managed" : "Observed"} note="Seat artisi team management akisindan izlenebilir." />
-                      <SnapshotCard label="Audit support" value="Enabled" note="Plan, export ve preference aksiyonlari audit kaydina dusuyor." />
+                      <SnapshotCard label="Plan posture" value={billingPlan} note={billingStatus === "PAST_DUE" ? "Collection attention gerekiyor." : "Workspace commercial state kayitli."} />
+                      <SnapshotCard label="Usage state" value={billingSummary.flags.alertState} note={billingSummary.guidance} />
+                      <SnapshotCard label="Seat control" value={seatCap ? `${teamSummary.total}/${seatCap}` : "Open"} note={billingSummary.flags.overageBlocked ? "Overage bloklu" : allowOverage ? "Overage izinli" : "Cap enforced"} />
+                      <SnapshotCard label="Owner authority" value={currentAccess.isOwner ? "Active" : "Owner-led"} note="Plan ve invoice mutasyonlari owner seviyesinde tutulur." />
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
-                    <div className="text-sm font-semibold text-white">Billing roadmap</div>
-                    <ul className="mt-5 space-y-3 text-sm text-slate-200">
-                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Plan selection ve seat cap controls.</li>
-                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Invoice / usage timeline for workspace owner.</li>
-                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Role-aware billing mutation policy integrated with permissions.</li>
-                    </ul>
+                  <div className="rounded-xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+                    <div className="text-sm font-semibold text-white">Usage signals</div>
+                    <div className="mt-5 grid gap-3">
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                        {billingSummary.metrics.projectCount} aktif proje plan kapasitesiyle ayni workspace posture icinde izleniyor.
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                        Weekly digest {billingSummary.flags.weeklyDigestEnabled ? "aktif" : "kapali"}; reporting load billing usage yorumuna dahil ediliyor.
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                        Threshold %{
+                          Number(usageAlertThresholdPct) || initialBilling.usageAlertThresholdPct
+                        } seviyesinde; seat kullanimi buna gore warning state uretir.
+                      </div>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -988,12 +1483,12 @@ export default function SettingsConsole({
               </div>
 
               <div className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
-                <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-700">
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
                     <ShieldCheck size={13} />
                     Governance
                   </div>
-                  <h2 className="mt-3 text-xl font-black text-slate-950">Session and audit controls</h2>
+                  <h2 className="mt-3 text-xl font-semibold text-slate-900">Session and audit controls</h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
                     Mevcut rolu, oturum kimligini ve governance yuzeylerini kontrol edin.
                   </p>
@@ -1018,19 +1513,19 @@ export default function SettingsConsole({
                   </div>
                 </div>
 
-                <div className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+                <div className="rounded-xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
                   <div className="text-sm font-semibold text-white">Security posture</div>
                   <p className="mt-2 text-sm leading-6 text-slate-300">
                     Synorq v1 guvenlik katmani auditability, role governance ve controlled workspace mutation pattern&apos;i uzerine kuruludur.
                   </p>
                   <ul className="mt-5 space-y-3 text-sm text-slate-200">
-                    <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <li className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                       Workspace update aksiyonlari activity log kaydi olusturur.
                     </li>
-                    <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <li className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                       Team rol degisiklikleri audit timeline icinde severity ile izlenir.
                     </li>
-                    <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <li className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                       Bildirim tercihleri workspace user state uzerinden tutulur.
                     </li>
                   </ul>
@@ -1040,24 +1535,25 @@ export default function SettingsConsole({
           )}
         </div>
       </div>
+      </div>
     </div>
   );
 }
 
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-center">
-      <div className="text-sm font-black text-slate-950">{value}</div>
-      <div className="mt-0.5 text-[11px] uppercase tracking-[0.14em] text-slate-500">{label}</div>
+    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-center">
+      <div className="text-sm font-semibold text-slate-900">{value}</div>
+      <div className="mt-0.5 text-[11px] uppercase tracking-wider text-slate-500">{label}</div>
     </div>
   );
 }
 
 function MetricCard({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-2 text-2xl font-black text-slate-950">{value}</div>
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="mt-2 text-2xl font-semibold text-slate-900">{value}</div>
       <div className="mt-2 text-sm leading-6 text-slate-500">{note}</div>
     </div>
   );
@@ -1065,9 +1561,9 @@ function MetricCard({ label, value, note }: { label: string; value: string; note
 
 function SnapshotCard({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4">
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-2 text-sm font-semibold text-slate-950">{value}</div>
+    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="mt-2 text-sm font-semibold text-slate-900">{value}</div>
       <div className="mt-1 text-xs leading-5 text-slate-500">{note}</div>
     </div>
   );
@@ -1080,7 +1576,7 @@ function Notice({ children, tone }: { children: ReactNode; tone: "success" | "wa
     danger: "border-red-200 bg-red-50 text-red-700",
   } as const;
 
-  return <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${toneMap[tone]}`}>{children}</div>;
+  return <div className={`mt-4 rounded-xl border px-4 py-3 text-sm ${toneMap[tone]}`}>{children}</div>;
 }
 
 function Field({

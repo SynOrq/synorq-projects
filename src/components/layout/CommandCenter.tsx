@@ -61,71 +61,70 @@ export default function CommandCenter({ projects, focusTasks, people, alerts }: 
       <Dialog.Trigger asChild>
         <button
           type="button"
-          className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 transition hover:border-slate-300 hover:bg-white lg:min-w-[320px]"
+          className="flex w-full items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-400 transition hover:border-slate-300 hover:bg-white"
         >
-          <Search size={15} className="text-slate-400" />
-          <span className="flex-1 truncate text-left">Komut, proje, gorev veya kisi ara</span>
-          <span className="rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500">
-            Ctrl K
-          </span>
+          <Search size={14} className="flex-shrink-0 text-slate-400" />
+          <span className="flex-1 truncate text-left text-sm">Ara veya komut gir...</span>
+          <kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500 sm:inline-flex">
+            ⌘K
+          </kbd>
         </button>
       </Dialog.Trigger>
 
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-slate-950/30 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-[12vh] z-50 w-[min(760px,calc(100vw-32px))] -translate-x-1/2 rounded-[28px] border border-slate-200 bg-white shadow-[0_40px_120px_-40px_rgba(15,23,42,0.5)]">
-          <div className="border-b border-slate-200 px-5 py-4">
-            <Dialog.Title className="text-lg font-black text-slate-950">Command Center</Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-slate-500">
-              Hizli gecis, create action ve risk odakli navigation.
-            </Dialog.Description>
-            <div className="mt-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
-              <Search size={16} className="text-slate-400" />
-              <input
-                autoFocus
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Dashboard, Aylin Demir, risk projects, Northstar, launch checklist..."
-                className="w-full border-none bg-transparent text-sm text-slate-700 outline-none"
-              />
-            </div>
+        <Dialog.Content className="fixed left-1/2 top-[10vh] z-50 w-[min(680px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_64px_rgba(10,14,26,0.18)]">
+          {/* Search input */}
+          <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3.5">
+            <Search size={16} className="flex-shrink-0 text-slate-400" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Proje, görev, kişi veya sayfa ara..."
+              className="flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
+            />
+            <Dialog.Title className="sr-only">Command Center</Dialog.Title>
+            <Dialog.Description className="sr-only">Hızlı gezinme ve arama</Dialog.Description>
+            <kbd className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
+              ESC
+            </kbd>
           </div>
 
-          <div className="max-h-[70vh] overflow-y-auto px-5 py-5">
+          {/* Results */}
+          <div className="max-h-[60vh] overflow-y-auto p-2">
             {filtered.length === 0 && (
-              <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-12 text-center text-sm text-slate-500">
-                Eslesen komut bulunamadi.
+              <div className="py-10 text-center text-sm text-slate-400">
+                Eşleşen sonuç bulunamadı.
               </div>
             )}
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {groupOrder.map((group) => {
                 const groupItems = filtered.filter((item) => item.group === group);
                 if (groupItems.length === 0) return null;
 
                 return (
                   <div key={group}>
-                    <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{group}</div>
-                    <div className="space-y-2">
+                    <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{group}</p>
+                    <div>
                       {groupItems.map((item) => (
                         <Dialog.Close asChild key={item.id}>
                           <Link
                             href={item.href}
-                            className="flex items-center gap-3 rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-indigo-200 hover:bg-white"
+                            className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition hover:bg-slate-50"
                           >
                             <span
-                              className="h-3 w-3 flex-shrink-0 rounded-full bg-slate-300"
+                              className="h-2 w-2 flex-shrink-0 rounded-full bg-slate-300"
                               style={item.accent ? { background: item.accent } : undefined}
                             />
                             <div className="min-w-0 flex-1">
-                              <div className="truncate text-sm font-semibold text-slate-950">{item.title}</div>
-                              <div className="mt-1 truncate text-xs text-slate-500">{item.subtitle}</div>
+                              <p className="truncate text-sm font-medium text-slate-900">{item.title}</p>
+                              <p className="truncate text-xs text-slate-400">{item.subtitle}</p>
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-slate-400">
-                              <span className="hidden rounded-lg border border-slate-200 bg-white px-2 py-1 sm:inline-flex">
-                                <CornerDownLeft size={12} />
-                              </span>
-                              <ArrowRight size={14} />
+                            <div className="flex items-center gap-2 text-slate-300">
+                              <CornerDownLeft size={12} />
+                              <ArrowRight size={12} />
                             </div>
                           </Link>
                         </Dialog.Close>

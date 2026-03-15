@@ -94,6 +94,8 @@ model Workspace {
   clients Client[]
   projects Project[]
   states  WorkspaceUserState[]
+  billing WorkspaceBilling?
+  integrations WorkspaceIntegration[]
 }
 
 model WorkspaceMember {
@@ -114,6 +116,65 @@ enum WorkspaceRole {
   ADMIN
   MEMBER
   VIEWER
+}
+
+model WorkspaceBilling {
+  id                     String                 @id @default(cuid())
+  workspaceId            String                 @unique
+  plan                   WorkspacePlan          @default(TEAM)
+  status                 WorkspaceBillingStatus @default(ACTIVE)
+  billingEmail           String?
+  seatCap                Int?
+  allowOverage           Boolean                @default(false)
+  usageAlertThresholdPct Int                    @default(85)
+  renewalDate            DateTime?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model WorkspaceIntegration {
+  id           String                     @id @default(cuid())
+  workspaceId  String
+  provider     WorkspaceIntegrationProvider
+  status       WorkspaceIntegrationStatus @default(DISCONNECTED)
+  label        String?
+  config       Json?
+  lastSyncedAt DateTime?
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, provider])
+}
+
+enum WorkspacePlan {
+  TEAM
+  GROWTH
+  SCALE
+  ENTERPRISE
+}
+
+enum WorkspaceBillingStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum WorkspaceIntegrationProvider {
+  SLACK
+  GOOGLE_CALENDAR
+  WEBHOOK
+  API_KEY
+}
+
+enum WorkspaceIntegrationStatus {
+  DISCONNECTED
+  CONNECTED
+  ERROR
 }
 
 model WorkspaceMemberCapacity {
@@ -181,20 +242,26 @@ enum ProjectType {
 }
 
 model Client {
-  id          String       @id @default(cuid())
-  workspaceId String
-  ownerId     String?
-  name        String
-  slug        String
-  industry    String?
-  notes       String?
-  health      ClientHealth @default(STABLE)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id                String         @id @default(cuid())
+  workspaceId       String
+  ownerId           String?
+  name              String
+  slug              String
+  industry          String?
+  notes             String?
+  contractValue     Int?
+  contractStartDate DateTime?
+  contractEndDate   DateTime?
+  retainerCadence   RetainerCadence?
+  retainerStatus    RetainerStatus?
+  health            ClientHealth   @default(STABLE)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   owner     User?     @relation("ClientOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   projects  Project[]
+  portal    ClientPortal?
 
   @@unique([workspaceId, slug])
 }
@@ -203,6 +270,35 @@ enum ClientHealth {
   STABLE
   WATCH
   AT_RISK
+}
+
+enum RetainerCadence {
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+  PROJECT
+}
+
+enum RetainerStatus {
+  ACTIVE
+  RENEWAL_DUE
+  PAUSED
+  ENDED
+}
+
+model ClientPortal {
+  id             String   @id @default(cuid())
+  clientId       String   @unique
+  shareToken     String   @unique @default(cuid())
+  isPublished    Boolean  @default(false)
+  welcomeTitle   String?
+  welcomeMessage String?
+  accentColor    String   @default("#0f172a")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  publishedAt    DateTime?
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 // ─── Section ─────────────────────────────────────────────────────────────────

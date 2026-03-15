@@ -297,39 +297,42 @@ export default function NotificationsConsole({
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
-      <div className="flex flex-col gap-4 rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-            <BellRing size={13} />
-            Notifications Center
+    <div className="min-h-full">
+      <div className="border-b border-slate-200 bg-white px-8 py-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
+              <BellRing size={13} />
+              Notifications Center
+            </div>
+            <h1 className="mt-4 text-2xl font-bold text-slate-900">Action queue, activity ve weekly digest</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+              {workspaceName} icin karar bekleyen riskler, ekip hareketleri ve haftalik ozet ayni merkezde toplanir.
+            </p>
           </div>
-          <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950">Action queue, activity ve weekly digest</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-            {workspaceName} icin karar bekleyen riskler, ekip hareketleri ve haftalik ozet ayni merkezde toplanir.
-          </p>
-        </div>
 
-        <div className="grid gap-3 sm:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Yeni sinyal</div>
-            <div className="mt-1 text-2xl font-black text-slate-950">{unreadCount}</div>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Arsivlenebilir</div>
-            <div className="mt-1 text-2xl font-black text-slate-950">{archivedCount}</div>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Ertelenen</div>
-            <div className="mt-1 text-2xl font-black text-slate-950">{snoozedCount}</div>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600">
-            Risk: {localRiskAlertsEnabled ? "Acik" : "Kapali"} • Activity: {localActivityAlertsEnabled ? "Acik" : "Kapali"} • Digest: {localWeeklyDigestEnabled ? "Acik" : "Kapali"}
+          <div className="grid gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Yeni sinyal</div>
+              <div className="mt-1 text-2xl font-bold text-slate-900">{unreadCount}</div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Arsivlenebilir</div>
+              <div className="mt-1 text-2xl font-bold text-slate-900">{archivedCount}</div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ertelenen</div>
+              <div className="mt-1 text-2xl font-bold text-slate-900">{snoozedCount}</div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600">
+              Risk: {localRiskAlertsEnabled ? "Acik" : "Kapali"} • Activity: {localActivityAlertsEnabled ? "Acik" : "Kapali"} • Digest: {localWeeklyDigestEnabled ? "Acik" : "Kapali"}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="p-8 space-y-6">
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-2">
             {tabs.map((item) => (
@@ -406,50 +409,50 @@ export default function NotificationsConsole({
         )}
       </div>
 
-      {error && <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>}
-      {feedback && <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{feedback}</div>}
+      {error && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>}
+      {feedback && <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{feedback}</div>}
 
       {tab === "digest" ? (
         <div className="grid gap-6 lg:grid-cols-[0.96fr_1.04fr]">
-          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-2 text-lg font-semibold text-slate-900">
               <Layers3 size={18} className="text-indigo-600" />
               Haftalik ozet
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-slate-50 px-4 py-4">
-                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Proje sinyali</div>
-                <div className="mt-2 text-2xl font-black text-slate-950">{digest.activeProjectSignals}</div>
+              <div className="rounded-xl bg-slate-50 px-4 py-4">
+                <div className="text-xs uppercase tracking-wider text-slate-400">Proje sinyali</div>
+                <div className="mt-2 text-2xl font-semibold text-slate-900">{digest.activeProjectSignals}</div>
               </div>
-              <div className="rounded-2xl bg-slate-50 px-4 py-4">
-                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Risk</div>
-                <div className="mt-2 text-2xl font-black text-slate-950">{digest.riskSignals}</div>
+              <div className="rounded-xl bg-slate-50 px-4 py-4">
+                <div className="text-xs uppercase tracking-wider text-slate-400">Risk</div>
+                <div className="mt-2 text-2xl font-semibold text-slate-900">{digest.riskSignals}</div>
               </div>
-              <div className="rounded-2xl bg-slate-50 px-4 py-4">
-                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Mention</div>
-                <div className="mt-2 text-2xl font-black text-slate-950">{digest.mentionSignals}</div>
+              <div className="rounded-xl bg-slate-50 px-4 py-4">
+                <div className="text-xs uppercase tracking-wider text-slate-400">Mention</div>
+                <div className="mt-2 text-2xl font-semibold text-slate-900">{digest.mentionSignals}</div>
               </div>
             </div>
           </section>
 
-          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="text-lg font-black text-slate-950">Digest notes</div>
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-lg font-semibold text-slate-900">Digest notes</div>
             <div className="mt-4 space-y-3">
               {digest.summary.map((item) => (
-                <div key={item} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
                   {item}
                 </div>
               ))}
-              <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-4 text-sm text-slate-500">
+              <div className="rounded-xl border border-dashed border-slate-200 px-4 py-4 text-sm text-slate-500">
                 Weekly digest tercihi {digest.weeklyDigestEnabled ? "aktif" : "pasif"} durumda. Ayrintili e-posta/export akisi sonraki fazda eklenecek.
               </div>
             </div>
           </section>
 
-          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-lg font-black text-slate-950">Notification rules</div>
+                <div className="text-lg font-semibold text-slate-900">Notification rules</div>
                 <p className="mt-1 text-sm text-slate-600">Action, activity ve digest akisini delivery posture ile uyumlu tutun.</p>
               </div>
               <Button type="button" variant="outline" loading={isRulesPending} onClick={saveRules}>
@@ -481,7 +484,7 @@ export default function NotificationsConsole({
                   onChange: setLocalWeeklyDigestEnabled,
                 },
               ].map((rule) => (
-                <label key={rule.id} className="flex items-start gap-3 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+                <label key={rule.id} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
                   <input
                     type="checkbox"
                     checked={rule.checked}
@@ -499,11 +502,11 @@ export default function NotificationsConsole({
           </section>
         </div>
       ) : (
-        <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-4 space-y-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-lg font-black text-slate-950">
+                <div className="text-lg font-semibold text-slate-900">
                   {tab === "action" ? "Action Required" : "Activity"}
                 </div>
                 <p className="mt-1 text-sm text-slate-600">
@@ -517,7 +520,7 @@ export default function NotificationsConsole({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
               <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <input
                   type="checkbox"
@@ -554,7 +557,7 @@ export default function NotificationsConsole({
 
           <div className="space-y-3">
             {filteredItems.length === 0 && (
-              <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
                 Secili tab ve filtre icin kayit bulunamadi.
               </div>
             )}
@@ -562,7 +565,7 @@ export default function NotificationsConsole({
             {filteredItems.map((item) => (
               <article
                 key={item.id}
-                className={`rounded-[24px] border px-4 py-4 transition hover:bg-white ${
+                className={`rounded-xl border px-4 py-4 transition hover:bg-white ${
                   item.unread ? "border-indigo-200 bg-indigo-50/60" : "border-slate-200 bg-slate-50"
                 }`}
               >
@@ -576,7 +579,7 @@ export default function NotificationsConsole({
                     />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Link href={item.href} className="text-sm font-black text-slate-950 hover:text-indigo-700">
+                        <Link href={item.href} className="text-sm font-semibold text-slate-900 hover:text-indigo-700">
                           {item.title}
                         </Link>
                         {item.unread && <span className="h-2 w-2 rounded-full bg-indigo-500" />}
@@ -639,6 +642,7 @@ export default function NotificationsConsole({
           </div>
         </section>
       )}
+      </div>
     </div>
   );
 }

@@ -108,34 +108,35 @@ export default function AuditConsole({ workspaceName, items, summary }: AuditCon
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 p-6">
-      <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+    <div className="min-h-full">
+      <div className="border-b border-slate-200 bg-white px-8 py-6">
+        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
           <ShieldCheck size={13} />
           Governance Layer
         </div>
-        <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950">Audit timeline ve denetlenebilir is akisi</h1>
+        <h1 className="mt-4 text-2xl font-bold text-slate-900">Audit timeline ve denetlenebilir is akisi</h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
           {workspaceName} icindeki project, task, team ve workspace hareketleri tek bir timeline ve filtre yuzeyinden okunur.
         </p>
       </div>
 
+      <div className="p-8 space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summary.map((item) => {
           const Icon = iconMap[item.icon];
           return (
-            <div key={item.label} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="inline-flex rounded-2xl bg-slate-100 p-2 text-slate-700">
+            <div key={item.label} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="inline-flex rounded-xl bg-slate-100 p-2 text-slate-700">
                 <Icon size={18} />
               </div>
-              <div className="mt-4 text-3xl font-black text-slate-950">{item.value}</div>
+              <div className="mt-4 text-2xl font-bold text-slate-900">{item.value}</div>
               <div className="mt-1 text-sm text-slate-500">{item.label}</div>
             </div>
           );
         })}
       </div>
 
-      <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-2">
             {scopes.map((item) => (
@@ -192,12 +193,12 @@ export default function AuditConsole({ workspaceName, items, summary }: AuditCon
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Aksiyon, actor veya proje ara"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <select
                   value={actor}
                   onChange={(event) => setActor(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   {actorOptions.map((item) => (
                     <option key={item} value={item}>
@@ -235,17 +236,17 @@ export default function AuditConsole({ workspaceName, items, summary }: AuditCon
 
         <div className="mt-6 space-y-3">
           {filteredItems.length === 0 && (
-            <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-400">
               Secili filtre icin gosterilecek audit kaydi yok.
             </div>
           )}
 
           {filteredItems.map((item) => (
-            <div key={item.id} className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+            <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="text-sm font-black text-slate-950">{item.title}</div>
+                    <div className="text-sm font-semibold text-slate-900">{item.title}</div>
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                         item.severity === "critical"
@@ -266,8 +267,8 @@ export default function AuditConsole({ workspaceName, items, summary }: AuditCon
                     <span className="rounded-full bg-white px-2.5 py-1">{item.action}</span>
                   </div>
                   {item.changes && item.changes.length > 0 && (
-                    <div className="mt-3 rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Diff preview</div>
+                    <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-3">
+                      <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Diff preview</div>
                       <div className="mt-2 space-y-2">
                         {item.changes.map((change) => (
                           <div key={`${item.id}-${change.field}`} className="text-xs text-slate-600">
@@ -288,6 +289,7 @@ export default function AuditConsole({ workspaceName, items, summary }: AuditCon
           ))}
         </div>
       </section>
+      </div>
     </div>
   );
 }

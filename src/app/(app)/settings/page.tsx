@@ -12,6 +12,11 @@ export default async function SettingsPage() {
   const workspace = await db.workspace.findFirst({
     where: { members: { some: { userId } } },
     include: {
+      _count: {
+        select: {
+          projects: true,
+        },
+      },
       owner: {
         select: {
           id: true,
@@ -34,6 +39,10 @@ export default async function SettingsPage() {
         },
         orderBy: [{ joinedAt: "asc" }],
       },
+      billing: true,
+      integrations: {
+        orderBy: { provider: "asc" },
+      },
     },
   });
 
@@ -43,11 +52,28 @@ export default async function SettingsPage() {
   const currentRole = membership?.role ?? "MEMBER";
   const isOwner = workspace.ownerId === userId;
   const canManageWorkspace = isOwner || currentRole === "ADMIN";
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const workspaceState = await findWorkspaceState({
     workspaceId: workspace.id,
     userId,
     includePreferences: true,
   });
+  const [publishedPortalCount, exportCountLast30Days] = await Promise.all([
+    db.clientPortal.count({
+      where: {
+        isPublished: true,
+        client: { workspaceId: workspace.id },
+      },
+    }),
+    db.activityLog.count({
+      where: {
+        workspaceId: workspace.id,
+        action: "export.created",
+        createdAt: { gte: thirtyDaysAgo },
+      },
+    }),
+  ]);
 
   async function logoutAction() {
     "use server";
@@ -74,6 +100,27 @@ export default async function SettingsPage() {
         activityAlertsEnabled: workspaceState?.activityAlertsEnabled ?? true,
         weeklyDigestEnabled: workspaceState?.weeklyDigestEnabled ?? false,
       }}
+      initialBilling={{
+        plan: workspace.billing?.plan ?? "TEAM",
+        status: workspace.billing?.status ?? "ACTIVE",
+        billingEmail: workspace.billing?.billingEmail ?? workspace.owner.email,
+        seatCap: workspace.billing?.seatCap ?? 12,
+        allowOverage: workspace.billing?.allowOverage ?? false,
+        usageAlertThresholdPct: workspace.billing?.usageAlertThresholdPct ?? 85,
+        renewalDate: workspace.billing?.renewalDate ?? null,
+      }}
+      usageTelemetry={{
+        projectCount: workspace._count?.projects ?? 0,
+        publishedPortalCount,
+        exportCountLast30Days,
+      }}
+      initialIntegrations={workspace.integrations.map((integration) => ({
+        provider: integration.provider,
+        status: integration.status,
+        label: integration.label,
+        config: integration.config as Record<string, unknown> | null,
+        lastSyncedAt: integration.lastSyncedAt,
+      }))}
       initialMembers={workspace.members}
       currentUserId={userId}
       currentAccess={{

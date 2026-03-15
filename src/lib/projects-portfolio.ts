@@ -1,12 +1,14 @@
-import type { AnalyzedProject } from "@/lib/portfolio";
-import type { CapacitySnapshot } from "@/lib/team-capacity";
+import type { AnalyzedProject } from "./portfolio.ts";
+import type { CapacitySnapshot } from "./team-capacity.ts";
+import { buildPortfolioHealthSummary, buildTeamWorkloadMetrics } from "./analytics.ts";
 
 export function buildPortfolioRiskTrend(projects: AnalyzedProject[]) {
+  const summary = buildPortfolioHealthSummary(projects);
   const buckets = [
-    { key: "risk", label: "Riskte", count: projects.filter((project) => project.health.key === "risk").length, tone: "bg-red-500" },
-    { key: "watch", label: "Izlemede", count: projects.filter((project) => project.health.key === "steady").length, tone: "bg-amber-500" },
-    { key: "overdue", label: "Overdue", count: projects.reduce((sum, project) => sum + project.overdueTasks, 0), tone: "bg-orange-500" },
-    { key: "open-risks", label: "Open risk", count: projects.reduce((sum, project) => sum + project.openRisks, 0), tone: "bg-indigo-500" },
+    { key: "risk", label: "Riskte", count: summary.riskProjects.length, tone: "bg-red-500" },
+    { key: "watch", label: "Izlemede", count: summary.watchedProjects.length, tone: "bg-amber-500" },
+    { key: "overdue", label: "Overdue", count: summary.overdueTasks, tone: "bg-orange-500" },
+    { key: "open-risks", label: "Open risk", count: summary.openRisks, tone: "bg-indigo-500" },
   ];
 
   const max = Math.max(1, ...buckets.map((bucket) => bucket.count));
@@ -62,17 +64,14 @@ export function buildOwnerDistribution(projects: AnalyzedProject[]) {
 }
 
 export function buildPortfolioWorkloadSummary(team: CapacitySnapshot[]) {
-  const topLoad = [...team]
-    .sort((left, right) => right.utilization - left.utilization || right.activeTasks - left.activeTasks)
-    .slice(0, 4);
+  const workload = buildTeamWorkloadMetrics(team);
 
   return {
-    overloadedMembers: team.filter((member) => member.loadState === "overloaded").length,
-    watchMembers: team.filter((member) => member.loadState === "watch").length,
-    averageUtilization:
-      team.length === 0 ? 0 : Math.round(team.reduce((sum, member) => sum + member.utilization, 0) / team.length),
-    projectedHours: team.reduce((sum, member) => sum + member.projectedHours, 0),
-    capacityHours: team.reduce((sum, member) => sum + member.weeklyCapacityHours, 0),
-    topLoad,
+    overloadedMembers: workload.overloadedMembers.length,
+    watchMembers: workload.watchMembers.length,
+    averageUtilization: workload.averageUtilization,
+    projectedHours: workload.projectedHours,
+    capacityHours: workload.capacityHours,
+    topLoad: workload.topLoad,
   };
 }

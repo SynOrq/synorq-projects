@@ -178,224 +178,228 @@ export default async function ReportsPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_24px_80px_-55px_rgba(15,23,42,0.45)]">
-        <div className="bg-[linear-gradient(135deg,rgba(15,23,42,0.03),rgba(99,102,241,0.08)_42%,rgba(14,165,233,0.08))] px-6 py-6">
-          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                <BarChart3 size={13} />
-                Weekly Executive Summary
-              </div>
-              <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950">
-                Delivery, risk ve kapasite ozetini yonetici seviyesinde okuyun.
-              </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-                {workspace.name} icin portfoy sagligi, kritik teslimler, ekip kapasitesi ve client risk yogunlugu tek rapor yüzeyinde toplanir.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Button asChild size="sm">
-                  <Link href="/reports/share">
-                    <Share2 size={13} />
-                    Share view
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/projects?health=risk">
-                    Riskte projeler
-                    <ArrowRight size={13} />
-                  </Link>
-                </Button>
-              </div>
+    <div className="min-h-full">
+      <div className="border-b border-slate-200 bg-white px-8 py-6">
+        <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
+              <BarChart3 size={13} />
+              Weekly Executive Summary
             </div>
+            <h1 className="mt-4 text-2xl font-bold text-slate-900">
+              Delivery, risk ve kapasite ozetini yonetici seviyesinde okuyun.
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
+              {workspace.name} icin portfoy sagligi, kritik teslimler, ekip kapasitesi ve client risk yogunlugu tek rapor yüzeyinde toplanir.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button asChild size="sm">
+                <Link href="/reports/share">
+                  <Share2 size={13} />
+                  Share view
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/projects?health=risk">
+                  Riskte projeler
+                  <ArrowRight size={13} />
+                </Link>
+              </Button>
+            </div>
+          </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[24px] border border-slate-200 bg-white/80 px-4 py-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Olusturulma</div>
-                <div className="mt-2 text-xl font-black text-slate-950">{formatDateTime(report.generatedAt)}</div>
-                <div className="mt-1 text-xs text-slate-500">rapor zaman damgasi</div>
-              </div>
-              <div className="rounded-[24px] border border-slate-200 bg-white/80 px-4 py-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Workspace owner</div>
-                <div className="mt-2 text-xl font-black text-slate-950">{workspace.owner.name ?? workspace.owner.email}</div>
-                <div className="mt-1 text-xs text-slate-500">{workspace.members.length} ekip uyesi</div>
-              </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white/80 px-4 py-4">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Olusturulma</div>
+              <div className="mt-2 text-base font-semibold text-slate-900">{formatDateTime(report.generatedAt)}</div>
+              <div className="mt-1 text-xs text-slate-500">rapor zaman damgasi</div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white/80 px-4 py-4">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Workspace owner</div>
+              <div className="mt-2 text-base font-semibold text-slate-900">{workspace.owner.name ?? workspace.owner.email}</div>
+              <div className="mt-1 text-xs text-slate-500">{workspace.members.length} ekip uyesi</div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {summaryCards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <div key={card.label} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className={`inline-flex rounded-2xl p-2 ${card.tone}`}>
-                <Icon size={18} />
-              </div>
-              <div className="mt-4 text-3xl font-black text-slate-950">{card.value}</div>
-              <div className="mt-1 text-sm font-semibold text-slate-700">{card.label}</div>
-              <div className="mt-1 text-xs text-slate-500">{card.note}</div>
-            </div>
-          );
-        })}
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 text-lg font-black text-slate-950">
-            <Gauge size={18} className="text-indigo-600" />
-            Portfolio health report
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <MiniCard label="Ortalama health" value={String(report.summary.averageHealth)} note="tum aktif projeler" />
-            <MiniCard label="Milestone progress" value={`%${report.summary.averageMilestoneCompletion}`} note="ortalama tamamlanma" />
-            <MiniCard label="Overdue tasks" value={String(report.summary.overdueTasks)} note="portfoy genelinde" />
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {report.riskProjects.slice(0, 4).map((project) => (
-              <div key={project.id} className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm font-black text-slate-950">{project.name}</div>
-                      <Badge variant="danger">{project.health.label}</Badge>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                      <span className="rounded-full bg-white px-2.5 py-1">{project.client?.name ?? "Internal"}</span>
-                      <span className="rounded-full bg-white px-2.5 py-1">{project.criticalRisks} kritik risk</span>
-                      <span className="rounded-full bg-white px-2.5 py-1">{project.openMilestones} acik milestone</span>
-                    </div>
-                  </div>
-                  <div className="text-right text-xs text-slate-500">
-                    <div>{project.dueDateResolved ? formatDate(project.dueDateResolved) : "Plansiz"}</div>
-                    <div className="mt-1">son hareket {formatRelative(project.lastActivityAt)}</div>
-                  </div>
+      <div className="p-8 space-y-6">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {summaryCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <div key={card.label} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className={`inline-flex rounded-xl p-2 ${card.tone}`}>
+                  <Icon size={18} />
                 </div>
+                <div className="mt-4 text-2xl font-bold text-slate-900">{card.value}</div>
+                <div className="mt-1 text-sm font-semibold text-slate-700">{card.label}</div>
+                <div className="mt-1 text-xs text-slate-500">{card.note}</div>
               </div>
-            ))}
-            {report.riskProjects.length === 0 && (
-              <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                Kritik portfolio riski gorunmuyor.
+            );
+          })}
+        </section>
+
+        <section className="grid gap-6 xl:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 px-5 py-4 flex items-center gap-2">
+              <Gauge size={18} className="text-indigo-600" />
+              <h2 className="text-base font-semibold text-slate-900">Portfolio health report</h2>
+            </div>
+            <div className="p-5">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <MiniCard label="Ortalama health" value={String(report.summary.averageHealth)} note="tum aktif projeler" />
+                <MiniCard label="Milestone progress" value={`%${report.summary.averageMilestoneCompletion}`} note="ortalama tamamlanma" />
+                <MiniCard label="Overdue tasks" value={String(report.summary.overdueTasks)} note="portfoy genelinde" />
               </div>
-            )}
-          </div>
-        </div>
 
-        <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 text-lg font-black text-slate-950">
-            <TrendingUp size={18} className="text-cyan-600" />
-            Executive spotlights
-          </div>
-          <div className="mt-5 space-y-3">
-            <SpotlightCard
-              label="En riskli proje"
-              title={report.projectSpotlights.highestRisk?.name ?? "Veri yok"}
-              detail={
-                report.projectSpotlights.highestRisk
-                  ? `${report.projectSpotlights.highestRisk.criticalRisks} kritik risk • ${report.projectSpotlights.highestRisk.overdueTasks} overdue`
-                  : "Riskli proje bulunmuyor."
-              }
-            />
-            <SpotlightCard
-              label="En yakin teslim"
-              title={report.projectSpotlights.nearestDeadline?.name ?? "Veri yok"}
-              detail={
-                report.projectSpotlights.nearestDeadline?.dueDateResolved
-                  ? formatDate(report.projectSpotlights.nearestDeadline.dueDateResolved)
-                  : "Takvimde yaklasan teslim yok."
-              }
-            />
-            <SpotlightCard
-              label="En iyi throughput"
-              title={report.projectSpotlights.bestThroughput?.name ?? "Veri yok"}
-              detail={
-                report.projectSpotlights.bestThroughput
-                  ? `%${report.projectSpotlights.bestThroughput.completionRate} completion`
-                  : "Karsilastirma icin veri yok."
-              }
-            />
-          </div>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {Object.entries(report.clientHealth).map(([key, count]) => (
-              <div key={key} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Client health</div>
-                <div className="mt-2 text-lg font-black text-slate-950">{count}</div>
-                <div className="mt-1 text-sm text-slate-500">{clientHealthLabel(key)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 text-lg font-black text-slate-950">
-            <Users size={18} className="text-emerald-600" />
-            Team workload report
-          </div>
-          <div className="mt-5 space-y-3">
-            {[...report.overloadedMembers, ...report.watchMembers].slice(0, 6).map((member) => (
-              <div key={member.id} className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-black text-slate-950">{member.name}</div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      {member.role} • {member.projectedHours}/{member.weeklyCapacityHours}h
+              <div className="mt-6 space-y-3">
+                {report.riskProjects.slice(0, 4).map((project) => (
+                  <div key={project.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-semibold text-slate-900">{project.name}</div>
+                          <Badge variant="danger">{project.health.label}</Badge>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                          <span className="rounded-full bg-white px-2.5 py-1">{project.client?.name ?? "Internal"}</span>
+                          <span className="rounded-full bg-white px-2.5 py-1">{project.criticalRisks} kritik risk</span>
+                          <span className="rounded-full bg-white px-2.5 py-1">{project.openMilestones} acik milestone</span>
+                        </div>
+                      </div>
+                      <div className="text-right text-xs text-slate-500">
+                        <div>{project.dueDateResolved ? formatDate(project.dueDateResolved) : "Plansiz"}</div>
+                        <div className="mt-1">son hareket {formatRelative(project.lastActivityAt)}</div>
+                      </div>
                     </div>
                   </div>
-                  <Badge variant={member.loadState === "overloaded" ? "danger" : "warning"}>
-                    %{member.utilization}
-                  </Badge>
-                </div>
-                <div className="mt-3 grid grid-cols-4 gap-3 text-xs text-slate-500">
-                  <div><div>Aktif</div><div className="mt-1 text-sm font-semibold text-slate-900">{member.activeTasks}</div></div>
-                  <div><div>Overdue</div><div className="mt-1 text-sm font-semibold text-slate-900">{member.overdueTasks}</div></div>
-                  <div><div>Blocked</div><div className="mt-1 text-sm font-semibold text-slate-900">{member.blockedTasks}</div></div>
-                  <div><div>Throughput</div><div className="mt-1 text-sm font-semibold text-slate-900">{member.completedLast7Days}</div></div>
-                </div>
+                ))}
+                {report.riskProjects.length === 0 && (
+                  <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-400">
+                    Kritik portfolio riski gorunmuyor.
+                  </div>
+                )}
               </div>
-            ))}
+            </div>
           </div>
-        </div>
 
-        <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 text-lg font-black text-slate-950">
-            <Clock3 size={18} className="text-amber-600" />
-            Delivery performance
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {Object.entries(report.statusDistribution).map(([status, count]) => (
-              <div key={status} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Status</div>
-                <div className="mt-2 text-lg font-black text-slate-950">{count}</div>
-                <div className="mt-1 text-sm text-slate-500">{statusLabel(status)}</div>
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 px-5 py-4 flex items-center gap-2">
+              <TrendingUp size={18} className="text-cyan-600" />
+              <h2 className="text-base font-semibold text-slate-900">Executive spotlights</h2>
+            </div>
+            <div className="p-5">
+              <div className="space-y-3">
+                <SpotlightCard
+                  label="En riskli proje"
+                  title={report.projectSpotlights.highestRisk?.name ?? "Veri yok"}
+                  detail={
+                    report.projectSpotlights.highestRisk
+                      ? `${report.projectSpotlights.highestRisk.criticalRisks} kritik risk • ${report.projectSpotlights.highestRisk.overdueTasks} overdue`
+                      : "Riskli proje bulunmuyor."
+                  }
+                />
+                <SpotlightCard
+                  label="En yakin teslim"
+                  title={report.projectSpotlights.nearestDeadline?.name ?? "Veri yok"}
+                  detail={
+                    report.projectSpotlights.nearestDeadline?.dueDateResolved
+                      ? formatDate(report.projectSpotlights.nearestDeadline.dueDateResolved)
+                      : "Takvimde yaklasan teslim yok."
+                  }
+                />
+                <SpotlightCard
+                  label="En iyi throughput"
+                  title={report.projectSpotlights.bestThroughput?.name ?? "Veri yok"}
+                  detail={
+                    report.projectSpotlights.bestThroughput
+                      ? `%${report.projectSpotlights.bestThroughput.completionRate} completion`
+                      : "Karsilastirma icin veri yok."
+                  }
+                />
               </div>
-            ))}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-              <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Open risks</div>
-              <div className="mt-2 text-lg font-black text-slate-950">{report.summary.openRisks}</div>
-              <div className="mt-1 text-sm text-slate-500">risk register toplamı</div>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-              <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Watched projects</div>
-              <div className="mt-2 text-lg font-black text-slate-950">{report.summary.watchedProjects}</div>
-              <div className="mt-1 text-sm text-slate-500">steady / monitor seviyesi</div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                {Object.entries(report.clientHealth).map(([key, count]) => (
+                  <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Client health</div>
+                    <div className="mt-2 text-2xl font-bold text-slate-900">{count}</div>
+                    <div className="mt-1 text-sm text-slate-500">{clientHealthLabel(key)}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <section className="grid gap-6 xl:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 px-5 py-4 flex items-center gap-2">
+              <Users size={18} className="text-emerald-600" />
+              <h2 className="text-base font-semibold text-slate-900">Team workload report</h2>
+            </div>
+            <div className="p-5 space-y-3">
+              {[...report.overloadedMembers, ...report.watchMembers].slice(0, 6).map((member) => (
+                <div key={member.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">{member.name}</div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        {member.role} • {member.projectedHours}/{member.weeklyCapacityHours}h
+                      </div>
+                    </div>
+                    <Badge variant={member.loadState === "overloaded" ? "danger" : "warning"}>
+                      %{member.utilization}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 grid grid-cols-4 gap-3 text-xs text-slate-500">
+                    <div><div>Aktif</div><div className="mt-1 text-sm font-semibold text-slate-900">{member.activeTasks}</div></div>
+                    <div><div>Overdue</div><div className="mt-1 text-sm font-semibold text-slate-900">{member.overdueTasks}</div></div>
+                    <div><div>Blocked</div><div className="mt-1 text-sm font-semibold text-slate-900">{member.blockedTasks}</div></div>
+                    <div><div>Throughput</div><div className="mt-1 text-sm font-semibold text-slate-900">{member.completedLast7Days}</div></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 px-5 py-4 flex items-center gap-2">
+              <Clock3 size={18} className="text-amber-600" />
+              <h2 className="text-base font-semibold text-slate-900">Delivery performance</h2>
+            </div>
+            <div className="p-5 grid gap-3 sm:grid-cols-2">
+              {Object.entries(report.statusDistribution).map(([status, count]) => (
+                <div key={status} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Status</div>
+                  <div className="mt-2 text-2xl font-bold text-slate-900">{count}</div>
+                  <div className="mt-1 text-sm text-slate-500">{statusLabel(status)}</div>
+                </div>
+              ))}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Open risks</div>
+                <div className="mt-2 text-2xl font-bold text-slate-900">{report.summary.openRisks}</div>
+                <div className="mt-1 text-sm text-slate-500">risk register toplamı</div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Watched projects</div>
+                <div className="mt-2 text-2xl font-bold text-slate-900">{report.summary.watchedProjects}</div>
+                <div className="mt-1 text-sm text-slate-500">steady / monitor seviyesi</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
 
 function MiniCard({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-4">
-      <div className="text-xs uppercase tracking-[0.14em] text-slate-400">{label}</div>
-      <div className="mt-2 text-lg font-black text-slate-950">{value}</div>
+    <div className="rounded-xl bg-slate-50 px-4 py-4">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</div>
+      <div className="mt-2 text-2xl font-bold text-slate-900">{value}</div>
       <div className="mt-1 text-sm text-slate-500">{note}</div>
     </div>
   );
@@ -403,9 +407,9 @@ function MiniCard({ label, value, note }: { label: string; value: string; note: 
 
 function SpotlightCard({ label, title, detail }: { label: string; title: string; detail: string }) {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
-      <div className="text-xs uppercase tracking-[0.14em] text-slate-400">{label}</div>
-      <div className="mt-2 text-sm font-black text-slate-950">{title}</div>
+    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</div>
+      <div className="mt-2 text-sm font-semibold text-slate-900">{title}</div>
       <div className="mt-2 text-sm text-slate-600">{detail}</div>
     </div>
   );

@@ -101,15 +101,15 @@ export default async function MyTasksPage({ searchParams }: MyTasksPageProps) {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 p-6">
-      <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
-        <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8">
+    <div className="min-h-full">
+      <div className="border-b border-slate-200 bg-white px-8 py-6">
+        <div className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">
+            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-700">
               <FolderKanban size={13} />
               Execution Inbox
             </div>
-            <h1 className="mt-4 flex items-center gap-3 text-3xl font-black tracking-tight text-slate-950">
+            <h1 className="mt-4 flex items-center gap-3 text-2xl font-bold text-slate-900">
               <CheckSquare className="text-indigo-600" />
               Gorevlerim
             </h1>
@@ -131,11 +131,11 @@ export default async function MyTasksPage({ searchParams }: MyTasksPageProps) {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="text-sm font-semibold text-slate-900">Bugunku odak</div>
             <div className="mt-3 space-y-2">
               {focusTasks.length === 0 && (
-                <div className="rounded-2xl bg-white px-4 py-6 text-sm text-slate-500">
+                <div className="rounded-xl bg-white px-4 py-6 text-sm text-slate-500">
                   Uzerinizde acik gorev yok. Yeni atamalar burada gorunecek.
                 </div>
               )}
@@ -143,7 +143,7 @@ export default async function MyTasksPage({ searchParams }: MyTasksPageProps) {
                 <Link
                   key={task.id}
                   href={`/projects/${task.project.id}`}
-                  className="flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 transition hover:bg-slate-100"
+                  className="flex items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 transition hover:bg-slate-100"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-sm font-semibold text-slate-900">{task.title}</div>
@@ -160,13 +160,14 @@ export default async function MyTasksPage({ searchParams }: MyTasksPageProps) {
         </div>
       </div>
 
+      <div className="p-8 space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {statusBreakdown.map(({ label, value, tone, icon: Icon }) => (
-          <div key={label} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${tone} text-white`}>
+          <div key={label} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className={`inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${tone} text-white`}>
               <Icon size={18} />
             </div>
-            <div className="mt-4 text-3xl font-black tracking-tight text-slate-950">{value}</div>
+            <div className="mt-4 text-2xl font-bold text-slate-900">{value}</div>
             <div className="mt-1 text-sm text-slate-500">{label}</div>
           </div>
         ))}
@@ -176,15 +177,15 @@ export default async function MyTasksPage({ searchParams }: MyTasksPageProps) {
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-xl font-black text-slate-950">Execution queue</h2>
+              <h2 className="text-base font-semibold text-slate-900">Execution queue</h2>
               <p className="mt-1 text-sm text-slate-500">Today, overdue, review ve blocked segmentleri ayni akis icinde okunur.</p>
             </div>
             <div className="text-sm font-semibold text-slate-500">{activeList.length} kayit</div>
           </div>
 
-          <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             {activeList.length === 0 ? (
-              <div className="p-10 text-center text-sm text-slate-500">Secili segmentte gorev bulunmuyor.</div>
+              <div className="px-5 py-12 text-center text-sm text-slate-400">Secili segmentte gorev bulunmuyor.</div>
             ) : (
               <div className="divide-y divide-slate-100">
                 {activeList.map((task) => {
@@ -244,35 +245,35 @@ export default async function MyTasksPage({ searchParams }: MyTasksPageProps) {
         </section>
 
         <div className="space-y-6">
-          <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-black text-slate-950">Workload snapshot</h2>
+          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-slate-900">Workload snapshot</h2>
             <div className="mt-4 space-y-3">
-              <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3">
+              <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3">
                 <div className="text-sm font-semibold text-red-700">Geciken gorevler</div>
                 <div className="mt-1 text-sm text-red-600">{overdueTasks.length} is bugun aksiyon istiyor.</div>
               </div>
-              <div className="rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3">
+              <div className="rounded-lg border border-cyan-100 bg-cyan-50 px-4 py-3">
                 <div className="text-sm font-semibold text-cyan-800">Bu hafta teslim</div>
                 <div className="mt-1 text-sm text-cyan-700">{dueSoonTasks.length} gorev yaklasan takvimde.</div>
               </div>
-              <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
+              <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
                 <div className="text-sm font-semibold text-amber-800">Blocked</div>
                 <div className="mt-1 text-sm text-amber-700">{blockedTasks.length} gorev destek veya karar bekliyor.</div>
               </div>
-              <div className="rounded-2xl border border-purple-100 bg-purple-50 px-4 py-3">
+              <div className="rounded-lg border border-purple-100 bg-purple-50 px-4 py-3">
                 <div className="text-sm font-semibold text-purple-800">Review queue</div>
                 <div className="mt-1 text-sm text-purple-700">{reviewTasks.length} gorev inceleme bekliyor.</div>
               </div>
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 px-5 py-4">
-              <h2 className="text-lg font-black text-slate-950">Recently completed</h2>
+              <h2 className="text-base font-semibold text-slate-900">Recently completed</h2>
               <p className="mt-1 text-sm text-slate-500">{completedLast7Days.length} gorev son 7 gunde kapandi.</p>
             </div>
             {completedLast7Days.length === 0 ? (
-              <div className="px-5 py-8 text-sm text-slate-500">Son 7 gunde tamamlanan gorev yok.</div>
+              <div className="px-5 py-12 text-center text-sm text-slate-400">Son 7 gunde tamamlanan gorev yok.</div>
             ) : (
               <div className="divide-y divide-slate-100">
                 {completedLast7Days.map((task) => {
@@ -295,6 +296,7 @@ export default async function MyTasksPage({ searchParams }: MyTasksPageProps) {
             )}
           </section>
         </div>
+      </div>
       </div>
     </div>
   );

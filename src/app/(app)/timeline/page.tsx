@@ -104,18 +104,17 @@ export default async function TimelinePage() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_24px_80px_-55px_rgba(15,23,42,0.45)]">
-        <div className="bg-[linear-gradient(135deg,rgba(15,23,42,0.03),rgba(59,130,246,0.08)_42%,rgba(14,165,233,0.08))] px-6 py-6">
-          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                <CalendarRange size={13} />
-                Workspace Timeline
-              </div>
-              <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950">
-                Milestone ve task takvimini tek delivery ekseninde izleyin.
-              </h1>
+    <div className="min-h-full">
+      <div className="border-b border-slate-200 bg-white px-8 py-6">
+        <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
+              <CalendarRange size={13} />
+              Workspace Timeline
+            </div>
+            <h1 className="mt-4 text-2xl font-bold text-slate-900">
+              Milestone ve task takvimini tek delivery ekseninde izleyin.
+            </h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
                 {workspace.name} icindeki proje kapanislari, milestone due date&apos;leri ve gorev teslimleri ayni timeline
                 yuzeyinde okunur.
@@ -131,37 +130,37 @@ export default async function TimelinePage() {
                   <Link href="/reports">Reports</Link>
                 </Button>
               </div>
-            </div>
+          </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[24px] border border-slate-200 bg-white/80 px-4 py-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Workspace</div>
-                <div className="mt-2 text-xl font-black text-slate-950">{workspace.name}</div>
-                <div className="mt-1 text-xs text-slate-500">{workspace._count.projects} aktif proje kaydi</div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white/80 px-4 py-4">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Workspace</div>
+              <div className="mt-2 text-base font-semibold text-slate-900">{workspace.name}</div>
+              <div className="mt-1 text-xs text-slate-500">{workspace._count.projects} aktif proje kaydi</div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white/80 px-4 py-4">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Peak day</div>
+              <div className="mt-2 text-base font-semibold text-slate-900">
+                {timeline.busiestDay ? formatDate(timeline.busiestDay.date) : "Plansiz"}
               </div>
-              <div className="rounded-[24px] border border-slate-200 bg-white/80 px-4 py-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Peak day</div>
-                <div className="mt-2 text-xl font-black text-slate-950">
-                  {timeline.busiestDay ? formatDate(timeline.busiestDay.date) : "Plansiz"}
-                </div>
-                <div className="mt-1 text-xs text-slate-500">
-                  {timeline.busiestDay ? `${timeline.busiestDay.count} teslim birikiyor` : "Takvim yogunlugu hesaplanamadi"}
-                </div>
+              <div className="mt-1 text-xs text-slate-500">
+                {timeline.busiestDay ? `${timeline.busiestDay.count} teslim birikiyor` : "Takvim yogunlugu hesaplanamadi"}
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
+      <div className="p-8 space-y-6">
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map((card, index) => {
           const Icon = index === 0 ? Clock3 : index === 1 ? CalendarRange : index === 2 ? CheckCircle2 : FolderKanban;
           return (
-            <div key={card.label} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="inline-flex rounded-2xl bg-slate-100 p-2 text-slate-700">
+            <div key={card.label} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="inline-flex rounded-xl bg-slate-100 p-2 text-slate-700">
                 <Icon size={18} />
               </div>
-              <div className="mt-4 text-3xl font-black text-slate-950">{card.value}</div>
+              <div className="mt-4 text-2xl font-bold text-slate-900">{card.value}</div>
               <div className="mt-1 text-sm font-semibold text-slate-700">{card.label}</div>
               <div className="mt-1 text-xs text-slate-500">{card.note}</div>
             </div>
@@ -169,24 +168,24 @@ export default async function TimelinePage() {
         })}
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+      <section className="grid gap-6 xl:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-base font-semibold text-slate-900">
             <Gauge size={18} className="text-indigo-600" />
             Delivery lanes
           </div>
           <div className="mt-5 grid gap-4 xl:grid-cols-3">
             {(["overdue", "thisWeek", "later"] as const).map((key) => (
-              <div key={key} className="rounded-[26px] border border-slate-200 bg-slate-50 p-4">
+              <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="text-sm font-black text-slate-950">{laneTitle(key)}</div>
+                  <div className="text-sm font-semibold text-slate-900">{laneTitle(key)}</div>
                   <span className="rounded-full bg-white px-2.5 py-1 text-xs text-slate-500">
                     {timeline.buckets[key].length}
                   </span>
                 </div>
                 <div className="mt-4 space-y-3">
                   {timeline.buckets[key].length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-sm text-slate-500">
+                    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-6 text-center text-sm text-slate-400">
                       Bu lane icin teslim kaydi yok.
                     </div>
                   )}
@@ -194,11 +193,11 @@ export default async function TimelinePage() {
                     <Link
                       key={item.id}
                       href={item.href}
-                      className="block rounded-[22px] border border-slate-200 bg-white px-4 py-4 transition hover:border-indigo-200 hover:bg-slate-50"
+                      className="block rounded-lg border border-slate-200 bg-white px-4 py-3.5 transition hover:border-indigo-200 hover:bg-slate-50"
                     >
                       <div className="flex items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full" style={{ background: item.projectColor }} />
-                        <div className="truncate text-sm font-black text-slate-950">{item.title}</div>
+                        <div className="truncate text-sm font-semibold text-slate-900">{item.title}</div>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
                         <span className="rounded-full bg-slate-100 px-2.5 py-1">{item.kind}</span>
@@ -230,24 +229,24 @@ export default async function TimelinePage() {
         </div>
 
         <div className="space-y-6">
-          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-2 text-lg font-black text-slate-950">
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-2 text-base font-semibold text-slate-900">
               <CalendarRange size={18} className="text-cyan-600" />
               Milestone rail
             </div>
             <div className="mt-5 space-y-3">
               {timeline.featuredMilestones.length === 0 && (
-                <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-400">
                   Due date&apos;li milestone kaydi bulunmuyor.
                 </div>
               )}
               {timeline.featuredMilestones.map((item) => (
-                <Link key={item.id} href={item.href} className="block rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-indigo-200 hover:bg-white">
+                <Link key={item.id} href={item.href} className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 transition hover:border-indigo-200 hover:bg-white">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full" style={{ background: item.projectColor }} />
-                        <div className="text-sm font-black text-slate-950">{item.title}</div>
+                        <div className="text-sm font-semibold text-slate-900">{item.title}</div>
                       </div>
                       <div className="mt-2 text-xs text-slate-500">{item.projectName} • {item.ownerName}</div>
                     </div>
@@ -269,22 +268,23 @@ export default async function TimelinePage() {
             </div>
           </section>
 
-          <section className="rounded-[30px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+          <section className="rounded-xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
             <div className="text-sm font-semibold text-white">Timeline operating notes</div>
             <div className="mt-4 space-y-3 text-sm text-slate-200">
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
                 Overdue lane geciken milestone ve task teslimlerini tek queue&apos;da gosterir.
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
                 This week lane gelecek 7 gun icindeki tum teslim baskisini ayni bandda toplar.
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
                 Milestone rail proje timeline&apos;indaki stratejik kapanislari global seviyede ozetler.
               </div>
             </div>
           </section>
         </div>
       </section>
+      </div>
     </div>
   );
 }

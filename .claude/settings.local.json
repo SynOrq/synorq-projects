@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:\\\\Users\\\\tarik\\\\synorq-projects\" && npx tsc --noEmit 2>&1 | head -60)",
+      "Bash(cd \"C:\\\\Users\\\\tarik\\\\synorq-projects\" && npx tsc --noEmit --skipLibCheck 2>&1 | grep -v \"^test/\" | head -20)"
+    ]
+  }
+}

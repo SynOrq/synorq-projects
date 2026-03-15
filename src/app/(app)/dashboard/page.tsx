@@ -7,9 +7,9 @@ import {
   CheckCircle2,
   Clock3,
   FolderKanban,
-  Gauge,
   LineChart,
   Plus,
+  TrendingUp,
   UsersRound,
   Zap,
 } from "lucide-react";
@@ -35,17 +35,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 const ACTIVITY_LABELS = {
-  "workspace.updated": "Workspace ayarlari guncellendi",
-  "workspace.member.invited": "Yeni ekip uyesi eklendi",
-  "workspace.member.role_updated": "Rol yetkisi guncellendi",
-  "task.created": "Yeni gorev olusturuldu",
-  "task.updated": "Gorev guncellendi",
-  "task.moved": "Gorev kolon degistirdi",
+  "workspace.updated": "Workspace ayarları güncellendi",
+  "workspace.member.invited": "Yeni ekip üyesi eklendi",
+  "workspace.member.role_updated": "Rol yetkisi güncellendi",
+  "task.created": "Yeni görev oluşturuldu",
+  "task.updated": "Görev güncellendi",
+  "task.moved": "Görev kolon değiştirdi",
   "milestone.created": "Milestone eklendi",
-  "risk.created": "Risk kaydi acildi",
+  "risk.created": "Risk kaydı açıldı",
   "task.commented": "Yorum eklendi",
-  "task.subtask.created": "Alt gorev acildi",
-  "task.subtask.updated": "Alt gorev guncellendi",
+  "task.subtask.created": "Alt görev açıldı",
+  "task.subtask.updated": "Alt görev güncellendi",
   "task.attachment.created": "Dosya eklendi",
   "task.attachment.deleted": "Dosya silindi",
 } as const;
@@ -85,7 +85,7 @@ export default async function DashboardPage() {
   });
 
   if (!workspace) redirect("/auth/login");
-  const currentMembership = workspace.members.find((member) => member.user.id === userId);
+  const currentMembership = workspace.members.find((m) => m.user.id === userId);
   if (!currentMembership) redirect("/auth/login");
 
   const [projectsRaw, recentActivity, myTasks] = await Promise.all([
@@ -114,22 +114,11 @@ export default async function DashboardPage() {
             title: true,
             status: true,
             dueDate: true,
-            tasks: {
-              select: {
-                id: true,
-                status: true,
-              },
-            },
+            tasks: { select: { id: true, status: true } },
           },
         },
         risks: {
-          select: {
-            id: true,
-            status: true,
-            impact: true,
-            likelihood: true,
-            dueDate: true,
-          },
+          select: { id: true, status: true, impact: true, likelihood: true, dueDate: true },
         },
       },
       orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
@@ -141,7 +130,7 @@ export default async function DashboardPage() {
         project: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: 8,
     }),
     db.task.findMany({
       where: {
@@ -156,114 +145,137 @@ export default async function DashboardPage() {
       take: 5,
     }),
   ]);
+
   const accessibleProjectsRaw = filterAccessibleProjects(projectsRaw, {
     userId,
     workspaceOwnerId: workspace.ownerId,
     workspaceRole: currentMembership.role,
   });
-  const accessibleProjectIds = new Set(accessibleProjectsRaw.map((project) => project.id));
-  const visibleRecentActivity = recentActivity.filter((item) => !item.project || accessibleProjectIds.has(item.project.id));
-  const visibleMyTasks = myTasks.filter((task) => accessibleProjectIds.has(task.project.id));
+  const accessibleProjectIds = new Set(accessibleProjectsRaw.map((p) => p.id));
+  const visibleRecentActivity = recentActivity.filter(
+    (item) => !item.project || accessibleProjectIds.has(item.project.id)
+  );
+  const visibleMyTasks = myTasks.filter((t) => accessibleProjectIds.has(t.project.id));
 
   const now = new Date();
-  const firstName = session.user.name?.split(" ")[0] ?? "Kullanici";
+  const firstName = session.user.name?.split(" ")[0] ?? "Kullanıcı";
   const projects = analyzeProjects(accessibleProjectsRaw as PortfolioProject[], now);
-  const allTasks = projects.flatMap((project) =>
-    project.tasks.map((task) => ({
-      ...task,
-      projectId: project.id,
-      projectName: project.name,
-      projectColor: project.color,
-      projectDueDate: project.dueDateResolved,
-      health: project.health,
+  const allTasks = projects.flatMap((p) =>
+    p.tasks.map((t) => ({
+      ...t,
+      projectId: p.id,
+      projectName: p.name,
+      projectColor: p.color,
+      projectDueDate: p.dueDateResolved,
+      health: p.health,
     }))
   );
+
   const teamLoad = analyzeTeamLoad(
-    workspace.members.map((member) => ({
-      id: member.userId,
-      name: member.user.name ?? member.user.email,
-      email: member.user.email,
-      role: member.role,
+    workspace.members.map((m) => ({
+      id: m.userId,
+      name: m.user.name ?? m.user.email,
+      email: m.user.email,
+      role: m.role,
     })),
     allTasks,
     now
   );
 
   const riskProjects = projects
-    .filter((project) => project.health.key === "risk" || project.overdueTasks > 0 || project.unassignedTasks > 0)
+    .filter((p) => p.health.key === "risk" || p.overdueTasks > 0 || p.unassignedTasks > 0)
     .sort(
-      (left, right) =>
-        left.health.score - right.health.score ||
-        right.overdueTasks - left.overdueTasks ||
-        (left.dueInDays ?? 999) - (right.dueInDays ?? 999)
+      (a, b) =>
+        a.health.score - b.health.score ||
+        b.overdueTasks - a.overdueTasks ||
+        (a.dueInDays ?? 999) - (b.dueInDays ?? 999)
     );
 
   const criticalProjects = riskProjects.slice(0, 4);
-  const deliveriesThisWeek = projects.filter((project) => inNextWeek(project.dueDateResolved, now));
-  const openTasks = allTasks.filter((task) => task.status !== "DONE" && task.status !== "CANCELLED");
-  const overdueTasks = openTasks.filter((task) => task.dueDate && new Date(task.dueDate) < now);
-  const unassignedTasks = openTasks.filter((task) => !task.assigneeId);
-  const completedLast7Days = allTasks.filter((task) => {
-    if (!task.completedAt) return false;
+  const deliveriesThisWeek = projects.filter((p) => inNextWeek(p.dueDateResolved, now));
+  const openTasks = allTasks.filter((t) => t.status !== "DONE" && t.status !== "CANCELLED");
+  const overdueTasks = openTasks.filter((t) => t.dueDate && new Date(t.dueDate) < now);
+  const unassignedTasks = openTasks.filter((t) => !t.assigneeId);
+  const completedLast7Days = allTasks.filter((t) => {
+    if (!t.completedAt) return false;
     const boundary = new Date(now);
     boundary.setDate(boundary.getDate() - 7);
-    return new Date(task.completedAt) >= boundary;
+    return new Date(t.completedAt) >= boundary;
   }).length;
 
   const attentionTasks = [...openTasks]
-    .sort((left, right) => {
-      const leftOverdue = left.dueDate ? new Date(left.dueDate) < now : false;
-      const rightOverdue = right.dueDate ? new Date(right.dueDate) < now : false;
-      if (leftOverdue !== rightOverdue) return leftOverdue ? -1 : 1;
-      if (Boolean(left.assigneeId) !== Boolean(right.assigneeId)) return left.assigneeId ? 1 : -1;
-      return PRIORITY_WEIGHT[right.priority ?? "MEDIUM"] - PRIORITY_WEIGHT[left.priority ?? "MEDIUM"];
+    .sort((a, b) => {
+      const aOverdue = a.dueDate ? new Date(a.dueDate) < now : false;
+      const bOverdue = b.dueDate ? new Date(b.dueDate) < now : false;
+      if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+      if (Boolean(a.assigneeId) !== Boolean(b.assigneeId)) return a.assigneeId ? 1 : -1;
+      return PRIORITY_WEIGHT[b.priority ?? "MEDIUM"] - PRIORITY_WEIGHT[a.priority ?? "MEDIUM"];
     })
     .slice(0, 6);
 
   const metrics = [
     {
-      title: "Riskte proje",
+      label: "Riskte Proje",
       value: riskProjects.length,
-      detail: "yakindan takip edilmesi gereken teslimler",
+      sub: "yakindan takip",
       icon: AlertTriangle,
-      tone: "bg-red-50 text-red-700",
+      color: "text-red-600",
+      bg: "bg-red-50",
+      border: "border-red-100",
+      trend: null,
     },
     {
-      title: "Bu hafta teslim",
+      label: "Bu Hafta Teslim",
       value: deliveriesThisWeek.length,
-      detail: "takvimde kapanmasi gereken proje",
+      sub: "kapanması gereken",
       icon: CalendarRange,
-      tone: "bg-amber-50 text-amber-700",
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+      border: "border-amber-100",
+      trend: null,
     },
     {
-      title: "Geciken gorev",
+      label: "Geciken Görev",
       value: overdueTasks.length,
-      detail: "aksiyon bekleyen acik is",
+      sub: "aksiyon bekliyor",
       icon: Clock3,
-      tone: "bg-orange-50 text-orange-700",
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+      border: "border-orange-100",
+      trend: null,
     },
     {
-      title: "Atanmamis is",
+      label: "Atanmamış İş",
       value: unassignedTasks.length,
-      detail: "sahipligi belirsiz gorev",
+      sub: "sahipsiz görev",
       icon: FolderKanban,
-      tone: "bg-sky-50 text-sky-700",
+      color: "text-sky-600",
+      bg: "bg-sky-50",
+      border: "border-sky-100",
+      trend: null,
     },
     {
-      title: "Yuk dengesizligi",
+      label: "Yük Dengesizliği",
       value: `${getWorkloadImbalanceScore(teamLoad)}%`,
-      detail: "ekip kapasite farki",
+      sub: "ekip kapasite farkı",
       icon: UsersRound,
-      tone: "bg-indigo-50 text-indigo-700",
+      color: "text-violet-600",
+      bg: "bg-violet-50",
+      border: "border-violet-100",
+      trend: null,
     },
     {
-      title: "7 gun throughput",
+      label: "7 Gün Throughput",
       value: completedLast7Days,
-      detail: "son hafta tamamlanan is",
-      icon: CheckCircle2,
-      tone: "bg-emerald-50 text-emerald-700",
+      sub: "tamamlanan iş",
+      icon: TrendingUp,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      border: "border-emerald-100",
+      trend: null,
     },
   ];
+
   const weeklyTrend = buildWeeklyCompletionTrend(allTasks, now);
   const upcomingDeadlines = buildUpcomingDeadlines(projects, allTasks, now);
   const recentBlockers = buildRecentBlockers(projects, allTasks);
@@ -274,536 +286,457 @@ export default async function DashboardPage() {
     dueThisWeekProjects: deliveriesThisWeek.length,
     overloadedMembers: countOverloadedMembers(teamLoad),
   });
-  const trendMax = Math.max(1, ...weeklyTrend.map((item) => item.count));
+  const trendMax = Math.max(1, ...weeklyTrend.map((d) => d.count));
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_24px_80px_-55px_rgba(15,23,42,0.45)]">
-        <div className="bg-[linear-gradient(135deg,rgba(15,23,42,0.02),rgba(37,99,235,0.08)_42%,rgba(13,148,136,0.08))] px-6 py-6">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                <Gauge size={13} />
-                Delivery Control Surface
-              </div>
-              <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950">
-                Merhaba {firstName}, operasyon ritmi bugun burada kiriliyor.
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-                {workspace.name} icin riskli teslimler, aksiyon kuyruyu, ekip kapasitesi ve son hareketler tek
-                karar yuzeyinde toplanir.
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[24px] border border-slate-200 bg-white/80 px-4 py-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Calisma alani</div>
-                <div className="mt-2 text-xl font-black text-slate-950">{workspace.name}</div>
-                <div className="mt-1 text-xs text-slate-500">{workspace._count.members} ekip uyesi aktif</div>
-              </div>
-              <div className="rounded-[24px] border border-slate-200 bg-white/80 px-4 py-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Benim odagim</div>
-                <div className="mt-2 text-xl font-black text-slate-950">{visibleMyTasks.length}</div>
-                <div className="mt-1 text-xs text-slate-500">bana atanmis aktif gorev</div>
-              </div>
-              <div className="rounded-[24px] border border-slate-200 bg-white/80 px-4 py-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Portfoy</div>
-                <div className="mt-2 text-xl font-black text-slate-950">{projects.length}</div>
-                <div className="mt-1 text-xs text-slate-500">{workspace._count.projects} toplam proje kaydi</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-3 xl:grid-cols-[1.05fr_0.95fr]">
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild>
-                <Link href="/projects/new">
-                  <Plus size={16} />
-                  Yeni proje ac
-                </Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/projects">
-                  Portfoyu ac
-                  <ArrowRight size={14} />
-                </Link>
-              </Button>
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-2">
-              {quickActions.map((action) => (
-                <Link
-                  key={action.label}
-                  href={action.href}
-                  className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm transition hover:border-indigo-200 hover:bg-white"
-                >
-                  <div className="font-semibold text-slate-950">{action.label}</div>
-                  <div className="mt-1 text-xs text-slate-500">{action.detail}</div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {metrics.map((metric) => {
-          const Icon = metric.icon;
-          return (
-            <div key={metric.title} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className={`inline-flex rounded-2xl p-2 ${metric.tone}`}>
-                <Icon size={18} />
-              </div>
-              <div className="mt-4 text-3xl font-black text-slate-950">{metric.value}</div>
-              <div className="mt-1 text-sm font-semibold text-slate-700">{metric.title}</div>
-              <div className="mt-1 text-xs text-slate-500">{metric.detail}</div>
-            </div>
-          );
-        })}
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
-        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Deadline Timeline</div>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Yaklasan teslimler ve kapanislar</h2>
-            </div>
-            <Link href="/reports/share" className="text-sm font-semibold text-indigo-600 hover:underline">
-              Executive view
-            </Link>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {upcomingDeadlines.length === 0 && (
-              <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                Önümüzdeki 7 gün için planlı teslim görünmüyor.
-              </div>
-            )}
-
-            {upcomingDeadlines.map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                className="flex items-center justify-between gap-4 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-indigo-200 hover:bg-white"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                        item.tone === "risk"
-                          ? "bg-red-100 text-red-700"
-                          : item.tone === "steady"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-emerald-100 text-emerald-700"
-                      }`}
-                    >
-                      {item.type === "project" ? "Project" : "Task"}
-                    </span>
-                    <div className="truncate text-sm font-black text-slate-950">{item.title}</div>
-                  </div>
-                  <div className="mt-2 text-sm text-slate-600">{item.detail}</div>
-                </div>
-                <div className="text-right text-xs text-slate-500">
-                  <div>{formatDate(item.dueDate)}</div>
-                  <div className="mt-1">{formatRelative(item.dueDate)}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Completion Trend</div>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Son 7 gun throughput ritmi</h2>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-              <LineChart size={13} />
-              {completedLast7Days} tamamlanan is
-            </div>
-          </div>
-
-          <div className="mt-6 grid grid-cols-7 gap-3">
-            {weeklyTrend.map((point) => (
-              <div key={point.key} className="flex flex-col items-center gap-3 rounded-[24px] bg-slate-50 px-3 py-4">
-                <div className="flex h-28 items-end">
-                  <div
-                    className="w-8 rounded-t-2xl bg-gradient-to-t from-indigo-600 to-cyan-500"
-                    style={{ height: `${Math.max(12, Math.round((point.count / trendMax) * 100))}%` }}
-                  />
-                </div>
-                <div className="text-sm font-black text-slate-950">{point.count}</div>
-                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">{point.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Critical Deliveries</div>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Raydan cikabilecek projeler</h2>
-            </div>
-            <Link href="/projects?health=risk" className="text-sm font-semibold text-indigo-600 hover:underline">
-              Riskte olanlari ac
-            </Link>
-          </div>
-
-          <div className="mt-6 space-y-4">
-            {criticalProjects.length === 0 && (
-              <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                Kritik proje sinyali yok. Portfoy saglikli gorunuyor.
-              </div>
-            )}
-
-            {criticalProjects.map((project) => (
-              <Link
-                key={project.id}
-                href={`/projects/${project.id}`}
-                className="block rounded-[28px] border border-slate-200 bg-slate-50 p-5 transition hover:border-indigo-200 hover:bg-white"
-              >
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: project.color }} />
-                      <div className="truncate text-lg font-black text-slate-950">{project.name}</div>
-                      <Badge variant={project.health.key === "risk" ? "danger" : "warning"}>{project.health.label}</Badge>
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
-                      {project.description ?? "Bu proje icin teslim akisi Synorq panelinden izleniyor."}
-                    </p>
-                  </div>
-
-                  <div className="rounded-[24px] border border-slate-200 bg-white px-4 py-3">
-                    <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Health score</div>
-                    <div className="mt-1 text-2xl font-black text-slate-950">{project.health.score}</div>
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
-                  <div className="rounded-2xl bg-white px-4 py-3">
-                    <div className="text-xs text-slate-400">Client</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-900">{project.client?.name ?? "Internal"}</div>
-                  </div>
-                  <div className="rounded-2xl bg-white px-4 py-3">
-                    <div className="text-xs text-slate-400">Due date</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-900">
-                      {project.dueDateResolved ? formatDate(project.dueDateResolved) : "Plansiz"}
-                    </div>
-                  </div>
-                  <div className="rounded-2xl bg-white px-4 py-3">
-                    <div className="text-xs text-slate-400">Owner</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-900">
-                      {project.owner?.name ?? project.owner?.email ?? workspace.owner.name ?? workspace.owner.email}
-                    </div>
-                  </div>
-                  <div className="rounded-2xl bg-white px-4 py-3">
-                    <div className="text-xs text-slate-400">Acil risk</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-900">{project.criticalRisks} kritik risk</div>
-                  </div>
-                  <div className="rounded-2xl bg-white px-4 py-3">
-                    <div className="text-xs text-slate-400">Sahiplik</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-900">{project.unassignedTasks} atanmamis gorev</div>
-                  </div>
-                  <div className="rounded-2xl bg-white px-4 py-3">
-                    <div className="text-xs text-slate-400">Milestone</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-900">
-                      {project.nextMilestone?.title ?? "Tanimsiz"}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-3 text-xs text-slate-500">
-                  {project.type.replace("_", " ")} • {project.priority} priority • son hareket {formatRelative(project.lastActivityAt)}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Action Queue</div>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Bugun karar bekleyen isler</h2>
-            </div>
-            <Link href="/my-tasks" className="text-sm font-semibold text-indigo-600 hover:underline">
-              Gorevlerim
-            </Link>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {attentionTasks.map((task) => {
-              const isOverdue = Boolean(task.dueDate && new Date(task.dueDate) < now);
-              const dueSoon = Boolean(task.dueDate && !isOverdue && inNextWeek(new Date(task.dueDate), now));
-
-              return (
-                <Link
-                  key={task.id}
-                  href={`/projects/${task.projectId}`}
-                  className="block rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-indigo-200 hover:bg-white"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-black text-slate-950">{task.title}</div>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                        <span className="rounded-full bg-white px-2.5 py-1">{task.projectName}</span>
-                        {!task.assigneeId && <span className="rounded-full bg-sky-100 px-2.5 py-1 text-sky-700">Atama bekliyor</span>}
-                        {isOverdue && <span className="rounded-full bg-red-100 px-2.5 py-1 text-red-700">Gecikti</span>}
-                        {!isOverdue && dueSoon && (
-                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-700">Bu hafta teslim</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-slate-400">Oncelik</div>
-                      <div className="mt-1 text-sm font-semibold text-slate-900">{task.priority ?? "MEDIUM"}</div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="mt-6 rounded-[28px] border border-slate-200 bg-slate-50 p-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">My Focus</div>
-            <div className="mt-4 space-y-3">
-              {visibleMyTasks.length === 0 && (
-                <div className="rounded-2xl bg-white px-4 py-6 text-sm text-slate-500">
-                  Uzerinize atanmis aktif gorev bulunmuyor.
-                </div>
-              )}
-
-              {visibleMyTasks.map((task) => (
-                <Link key={task.id} href={`/projects/${task.project.id}`} className="block rounded-2xl bg-white px-4 py-3 transition hover:bg-slate-100">
-                  <div className="truncate text-sm font-semibold text-slate-900">{task.title}</div>
-                  <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500">
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full" style={{ background: task.project.color }} />
-                      {task.project.name}
-                    </span>
-                    <span>{task.dueDate ? formatDate(task.dueDate) : "Plansiz"}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Recent Blockers</div>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Akisi bozan son engeller</h2>
-            </div>
-            <Link href="/my-tasks?segment=blocked" className="text-sm font-semibold text-indigo-600 hover:underline">
-              Blocked queue
-            </Link>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {recentBlockers.length === 0 && (
-              <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                Aktif blocker sinyali görünmüyor.
-              </div>
-            )}
-
-            {recentBlockers.map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                className="flex items-center justify-between gap-4 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-indigo-200 hover:bg-white"
-              >
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-black text-slate-950">{item.title}</div>
-                  <div className="mt-2 text-sm text-slate-600">{item.detail}</div>
-                </div>
-                <div
-                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    item.severity === "critical" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
-                  }`}
-                >
-                  {item.severity === "critical" ? "Critical" : "Watch"}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Team Capacity</div>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Kapasite ve darbo gaz sinyali</h2>
-            </div>
-            <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-              Owner: {workspace.owner.name ?? workspace.owner.email}
-            </div>
-          </div>
-
-          <div className="mt-6 space-y-4">
-            {teamLoad.map((member) => {
-              const barWidth = Math.min(100, Math.max(12, member.loadScore));
-              return (
-                <div key={member.id} className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-sm font-black text-slate-950">{member.name}</div>
-                      <div className="mt-1 text-xs text-slate-500">
-                        {member.role} • {member.activeTasks} aktif gorev
-                      </div>
-                    </div>
-                    <Badge
-                      variant={
-                        member.loadState === "overloaded"
-                          ? "danger"
-                          : member.loadState === "watch"
-                            ? "warning"
-                            : "success"
-                      }
-                    >
-                      {member.loadState === "overloaded"
-                        ? "Yuksek yuk"
-                        : member.loadState === "watch"
-                          ? "Izleniyor"
-                          : "Dengeli"}
-                    </Badge>
-                  </div>
-
-                  <div className="mt-4 h-2 rounded-full bg-white">
-                    <div
-                      className={`h-2 rounded-full ${
-                        member.loadState === "overloaded"
-                          ? "bg-red-500"
-                          : member.loadState === "watch"
-                            ? "bg-amber-500"
-                            : "bg-emerald-500"
-                      }`}
-                      style={{ width: `${barWidth}%` }}
-                    />
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-3 gap-3 text-xs text-slate-500">
-                    <div>
-                      <div>Geciken</div>
-                      <div className="mt-1 text-sm font-semibold text-slate-900">{member.overdueTasks}</div>
-                    </div>
-                    <div>
-                      <div>Bu hafta teslim</div>
-                      <div className="mt-1 text-sm font-semibold text-slate-900">{member.dueThisWeekTasks}</div>
-                    </div>
-                    <div>
-                      <div>7 gun throughput</div>
-                      <div className="mt-1 text-sm font-semibold text-slate-900">{member.completedLast7Days}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Activity Stream</div>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Son hareket ve karar izi</h2>
-            </div>
-            <Link href="/audit" className="text-sm font-semibold text-indigo-600 hover:underline">
-              Tum activity
-            </Link>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {visibleRecentActivity.length === 0 && (
-              <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                Henuz hareket kaydi yok.
-              </div>
-            )}
-
-            {visibleRecentActivity.map((item) => (
-              <div key={item.id} className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-black text-slate-950">
-                      {ACTIVITY_LABELS[item.action as keyof typeof ACTIVITY_LABELS] ?? item.action}
-                    </div>
-                    <div className="mt-1 text-sm text-slate-600">
-                      {(item.user.name ?? item.user.email) + (item.project ? ` • ${item.project.name}` : "")}
-                    </div>
-                  </div>
-                  <div className="text-right text-xs text-slate-500">
-                    <div>{formatRelative(item.createdAt)}</div>
-                    <div className="mt-1">{formatDate(item.createdAt)}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
+    <div className="min-h-full">
+      {/* Page header */}
+      <div className="border-b border-slate-200 bg-white px-8 py-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Client Risk Visibility</div>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Hangi client sessiz, hangisi risk uretıyor</h2>
+            <p className="text-sm text-slate-500">Merhaba, {firstName} 👋</p>
+            <h1 className="mt-1 text-2xl font-bold text-slate-900">Delivery Dashboard</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {workspace.name} · {projects.length} aktif proje · {workspace._count.members} ekip üyesi
+            </p>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-            <Zap size={13} />
-            client-first signal layer
+          <div className="flex items-center gap-2">
+            {quickActions.slice(0, 2).map((action) => (
+              <Link
+                key={action.label}
+                href={action.href}
+                className="hidden sm:flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:bg-slate-50 hover:border-slate-300"
+              >
+                <Zap size={12} className="text-indigo-500" />
+                {action.label}
+              </Link>
+            ))}
+            <Button asChild>
+              <Link href="/projects/new">
+                <Plus size={14} />
+                Yeni Proje
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-8 space-y-8">
+        {/* KPI Grid */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+          {metrics.map((metric) => {
+            const Icon = metric.icon;
+            return (
+              <div
+                key={metric.label}
+                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+              >
+                <div className={`inline-flex rounded-lg p-2 ${metric.bg}`}>
+                  <Icon size={15} className={metric.color} />
+                </div>
+                <div className="mt-3 text-2xl font-bold text-slate-900">{metric.value}</div>
+                <div className="mt-0.5 text-xs font-medium text-slate-700">{metric.label}</div>
+                <div className="mt-0.5 text-[11px] text-slate-400">{metric.sub}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Main grid */}
+        <div className="grid gap-6 xl:grid-cols-2">
+          {/* Deadline Timeline */}
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Deadline Timeline</p>
+                <h2 className="mt-0.5 text-base font-semibold text-slate-900">Yaklaşan teslimler</h2>
+              </div>
+              <Link href="/reports/share" className="text-xs font-medium text-indigo-600 hover:underline">
+                Executive view →
+              </Link>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {upcomingDeadlines.length === 0 ? (
+                <div className="px-5 py-10 text-center text-sm text-slate-400">
+                  Önümüzdeki 7 gün için planlı teslim yok.
+                </div>
+              ) : (
+                upcomingDeadlines.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className="flex items-center justify-between gap-4 px-5 py-3.5 transition hover:bg-slate-50"
+                  >
+                    <div className="min-w-0 flex items-center gap-3">
+                      <span
+                        className={`flex-shrink-0 h-2 w-2 rounded-full ${
+                          item.tone === "risk" ? "bg-red-500" : item.tone === "steady" ? "bg-amber-500" : "bg-emerald-500"
+                        }`}
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-slate-900">{item.title}</p>
+                        <p className="text-xs text-slate-400">{item.detail}</p>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="text-xs font-medium text-slate-600">{formatDate(item.dueDate)}</p>
+                      <p className="text-[11px] text-slate-400">{formatRelative(item.dueDate)}</p>
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Weekly Trend */}
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Completion Trend</p>
+                <h2 className="mt-0.5 text-base font-semibold text-slate-900">Son 7 gün throughput</h2>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                <LineChart size={12} />
+                {completedLast7Days} tamamlanan
+              </div>
+            </div>
+            <div className="px-5 py-4">
+              <div className="flex items-end gap-2 h-32">
+                {weeklyTrend.map((point) => (
+                  <div key={point.key} className="flex flex-1 flex-col items-center gap-1.5">
+                    <div className="w-full flex items-end justify-center" style={{ height: "88px" }}>
+                      <div
+                        className="w-full rounded-t-md bg-gradient-to-t from-indigo-600 to-indigo-400 transition-all"
+                        style={{ height: `${Math.max(6, Math.round((point.count / trendMax) * 88))}px` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-medium text-slate-400">{point.label}</span>
+                    <span className="text-xs font-bold text-slate-700">{point.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 xl:grid-cols-4">
-          {clientRiskVisibility.length === 0 && (
-            <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500 xl:col-span-4">
-              Client bagli risk sinyali bulunmuyor.
+        {/* Critical Projects */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Critical Deliveries</p>
+              <h2 className="mt-0.5 text-base font-semibold text-slate-900">Raydan çıkabilecek projeler</h2>
+            </div>
+            <Link href="/projects?health=risk" className="text-xs font-medium text-indigo-600 hover:underline">
+              Riskte olanları gör →
+            </Link>
+          </div>
+
+          {criticalProjects.length === 0 ? (
+            <div className="px-5 py-12 text-center text-sm text-slate-400">
+              Kritik proje sinyali yok. Portföy sağlıklı görünüyor.
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {criticalProjects.map((project) => (
+                <Link
+                  key={project.id}
+                  href={`/projects/${project.id}`}
+                  className="flex items-center justify-between gap-6 px-5 py-4 transition hover:bg-slate-50"
+                >
+                  <div className="min-w-0 flex items-center gap-3">
+                    <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ background: project.color }} />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-semibold text-slate-900">{project.name}</p>
+                        <Badge variant={project.health.key === "risk" ? "danger" : "warning"} dot>
+                          {project.health.label}
+                        </Badge>
+                      </div>
+                      <p className="mt-0.5 text-xs text-slate-400">
+                        {project.client?.name ?? "Internal"} · {project.criticalRisks} kritik risk · {project.unassignedTasks} atanmamış
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center gap-6 text-right">
+                    <div>
+                      <p className="text-[11px] text-slate-400">Health</p>
+                      <p className="text-lg font-bold text-slate-900">{project.health.score}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-slate-400">Due date</p>
+                      <p className="text-sm font-medium text-slate-700">
+                        {project.dueDateResolved ? formatDate(project.dueDateResolved) : "—"}
+                      </p>
+                    </div>
+                    <ArrowRight size={14} className="text-slate-300" />
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
-
-          {clientRiskVisibility.map((client) => (
-            <div key={client.name} className="rounded-[28px] border border-slate-200 bg-slate-50 p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-base font-black text-slate-950">{client.name}</div>
-                <Badge
-                  variant={
-                    client.health === "AT_RISK" ? "danger" : client.health === "WATCH" ? "warning" : "success"
-                  }
-                >
-                  {client.health === "AT_RISK" ? "At risk" : client.health === "WATCH" ? "Watch" : "Stable"}
-                </Badge>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-500">
-                <div className="rounded-2xl bg-white px-3 py-3">
-                  <div>Projeler</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900">{client.projects}</div>
-                </div>
-                <div className="rounded-2xl bg-white px-3 py-3">
-                  <div>Riskte proje</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900">{client.riskProjects}</div>
-                </div>
-                <div className="rounded-2xl bg-white px-3 py-3">
-                  <div>Open risk</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900">{client.openRisks}</div>
-                </div>
-                <div className="rounded-2xl bg-white px-3 py-3">
-                  <div>Overdue task</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900">{client.overdueTasks}</div>
-                </div>
-              </div>
-              <div className="mt-4 text-xs text-slate-500">son hareket {formatRelative(client.lastActivityAt)}</div>
-            </div>
-          ))}
         </div>
-      </section>
+
+        {/* Bottom grid: Action Queue + Team Capacity */}
+        <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+          {/* Action Queue */}
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Action Queue</p>
+                <h2 className="mt-0.5 text-base font-semibold text-slate-900">Bugün karar bekleyen işler</h2>
+              </div>
+              <Link href="/my-tasks" className="text-xs font-medium text-indigo-600 hover:underline">
+                Görevlerim →
+              </Link>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {attentionTasks.length === 0 ? (
+                <div className="px-5 py-10 text-center text-sm text-slate-400">
+                  Tüm görevler atanmış ve zamanında.
+                </div>
+              ) : (
+                attentionTasks.map((task) => {
+                  const isOverdue = Boolean(task.dueDate && new Date(task.dueDate) < now);
+                  const dueSoon = Boolean(task.dueDate && !isOverdue && inNextWeek(new Date(task.dueDate), now));
+                  return (
+                    <Link
+                      key={task.id}
+                      href={`/projects/${task.projectId}`}
+                      className="flex items-center justify-between gap-3 px-5 py-3.5 transition hover:bg-slate-50"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-slate-900">{task.title}</p>
+                        <div className="mt-1 flex items-center gap-1.5">
+                          <span className="text-xs text-slate-400">{task.projectName}</span>
+                          {!task.assigneeId && (
+                            <Badge variant="default">Atanmamış</Badge>
+                          )}
+                          {isOverdue && <Badge variant="danger">Gecikti</Badge>}
+                          {!isOverdue && dueSoon && <Badge variant="warning">Bu hafta</Badge>}
+                        </div>
+                      </div>
+                      <span className="flex-shrink-0 text-xs font-medium text-slate-400">
+                        {task.priority ?? "MEDIUM"}
+                      </span>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+
+            {/* My focus */}
+            <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-3">
+                Benim Odağım
+              </p>
+              <div className="space-y-2">
+                {visibleMyTasks.length === 0 ? (
+                  <p className="text-xs text-slate-400">Üzerinize atanmış aktif görev yok.</p>
+                ) : (
+                  visibleMyTasks.map((task) => (
+                    <Link
+                      key={task.id}
+                      href={`/projects/${task.project.id}`}
+                      className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2.5 border border-slate-200 text-sm transition hover:border-slate-300"
+                    >
+                      <div className="min-w-0 flex items-center gap-2">
+                        <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: task.project.color }} />
+                        <span className="truncate font-medium text-slate-800">{task.title}</span>
+                      </div>
+                      <span className="flex-shrink-0 text-[11px] text-slate-400">
+                        {task.dueDate ? formatDate(task.dueDate) : "—"}
+                      </span>
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Team Capacity */}
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Team Capacity</p>
+                <h2 className="mt-0.5 text-base font-semibold text-slate-900">Kapasite & darboğaz sinyali</h2>
+              </div>
+              <Link href="/members" className="text-xs font-medium text-indigo-600 hover:underline">
+                Ekip →
+              </Link>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {teamLoad.map((member) => {
+                const barWidth = Math.min(100, Math.max(4, member.loadScore));
+                return (
+                  <div key={member.id} className="px-5 py-4">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{member.name}</p>
+                        <p className="text-[11px] text-slate-400">
+                          {member.role} · {member.activeTasks} aktif görev
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          member.loadState === "overloaded" ? "danger" :
+                          member.loadState === "watch" ? "warning" : "success"
+                        }
+                        dot
+                      >
+                        {member.loadState === "overloaded" ? "Yüksek" :
+                         member.loadState === "watch" ? "İzleniyor" : "Dengeli"}
+                      </Badge>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-100">
+                      <div
+                        className={`h-1.5 rounded-full transition-all ${
+                          member.loadState === "overloaded" ? "bg-red-500" :
+                          member.loadState === "watch" ? "bg-amber-500" : "bg-emerald-500"
+                        }`}
+                        style={{ width: `${barWidth}%` }}
+                      />
+                    </div>
+                    <div className="mt-2.5 grid grid-cols-3 gap-2">
+                      {[
+                        { l: "Geciken", v: member.overdueTasks },
+                        { l: "Bu hafta", v: member.dueThisWeekTasks },
+                        { l: "7g throughput", v: member.completedLast7Days },
+                      ].map((stat) => (
+                        <div key={stat.l} className="rounded-lg bg-slate-50 px-2.5 py-2">
+                          <p className="text-[10px] text-slate-400">{stat.l}</p>
+                          <p className="mt-0.5 text-sm font-semibold text-slate-800">{stat.v}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Activity + Blockers + Client Risk */}
+        <div className="grid gap-6 xl:grid-cols-3">
+          {/* Activity Stream */}
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Activity</p>
+                <h2 className="mt-0.5 text-base font-semibold text-slate-900">Son hareketler</h2>
+              </div>
+              <Link href="/audit" className="text-xs font-medium text-indigo-600 hover:underline">
+                Tümü →
+              </Link>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {visibleRecentActivity.length === 0 ? (
+                <div className="px-5 py-10 text-center text-sm text-slate-400">Henüz hareket kaydı yok.</div>
+              ) : (
+                visibleRecentActivity.map((item) => (
+                  <div key={item.id} className="px-5 py-3.5">
+                    <p className="text-sm font-medium text-slate-800">
+                      {ACTIVITY_LABELS[item.action as keyof typeof ACTIVITY_LABELS] ?? item.action}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      {item.user.name ?? item.user.email}
+                      {item.project ? ` · ${item.project.name}` : ""}
+                      {" · "}
+                      {formatRelative(item.createdAt)}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Recent Blockers */}
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Blockers</p>
+                <h2 className="mt-0.5 text-base font-semibold text-slate-900">Akışı bozan engeller</h2>
+              </div>
+              <Link href="/risks" className="text-xs font-medium text-indigo-600 hover:underline">
+                Riskler →
+              </Link>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {recentBlockers.length === 0 ? (
+                <div className="px-5 py-10 text-center text-sm text-slate-400">
+                  Aktif blocker sinyali görünmüyor.
+                </div>
+              ) : (
+                recentBlockers.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className="flex items-start justify-between gap-3 px-5 py-3.5 transition hover:bg-slate-50"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-900">{item.title}</p>
+                      <p className="mt-0.5 text-xs text-slate-400">{item.detail}</p>
+                    </div>
+                    <Badge variant={item.severity === "critical" ? "danger" : "warning"}>
+                      {item.severity === "critical" ? "Critical" : "Watch"}
+                    </Badge>
+                  </Link>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Client Risk */}
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Client Risk</p>
+                <h2 className="mt-0.5 text-base font-semibold text-slate-900">Client risk görünürlüğü</h2>
+              </div>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {clientRiskVisibility.length === 0 ? (
+                <div className="px-5 py-10 text-center text-sm text-slate-400">
+                  Client bağlı risk sinyali bulunmuyor.
+                </div>
+              ) : (
+                clientRiskVisibility.map((client) => (
+                  <div key={client.name} className="px-5 py-4">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <p className="text-sm font-semibold text-slate-900">{client.name}</p>
+                      <Badge
+                        variant={
+                          client.health === "AT_RISK" ? "danger" :
+                          client.health === "WATCH" ? "warning" : "success"
+                        }
+                        dot
+                      >
+                        {client.health === "AT_RISK" ? "At Risk" :
+                         client.health === "WATCH" ? "Watch" : "Stable"}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { l: "Projeler", v: client.projects },
+                        { l: "Riskte", v: client.riskProjects },
+                        { l: "Open risk", v: client.openRisks },
+                        { l: "Overdue", v: client.overdueTasks },
+                      ].map((stat) => (
+                        <div key={stat.l} className="rounded-lg bg-slate-50 px-2.5 py-2">
+                          <p className="text-[10px] text-slate-400">{stat.l}</p>
+                          <p className="mt-0.5 text-sm font-semibold text-slate-800">{stat.v}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-[11px] text-slate-400">
+                      Son hareket {formatRelative(client.lastActivityAt)}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
