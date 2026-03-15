@@ -9,6 +9,11 @@ export type CapacityMember = {
   image: string | null;
   role: WorkspaceRole;
   isOwner?: boolean;
+  capacityProfile?: {
+    weeklyCapacityHours: number | null;
+    reservedHours: number;
+    outOfOfficeHours: number;
+  } | null;
 };
 
 export type CapacityTask = {
@@ -30,6 +35,10 @@ export type CapacityTask = {
 };
 
 export type CapacitySnapshot = CapacityMember & {
+  defaultRoleCapacityHours: number;
+  configuredCapacityHours: number;
+  reservedHours: number;
+  outOfOfficeHours: number;
   weeklyCapacityHours: number;
   projectedHours: number;
   loggedHours: number;
@@ -91,6 +100,22 @@ function estimateTaskHours(task: CapacityTask) {
   return task.estimatedH ?? priorityEstimate[task.priority];
 }
 
+function resolveMemberCapacity(member: CapacityMember) {
+  const defaultRoleCapacityHours = roleCapacity[member.role];
+  const configuredCapacityHours = member.capacityProfile?.weeklyCapacityHours ?? defaultRoleCapacityHours;
+  const reservedHours = member.capacityProfile?.reservedHours ?? 0;
+  const outOfOfficeHours = member.capacityProfile?.outOfOfficeHours ?? 0;
+  const weeklyCapacityHours = Math.max(0, configuredCapacityHours - reservedHours - outOfOfficeHours);
+
+  return {
+    defaultRoleCapacityHours,
+    configuredCapacityHours,
+    reservedHours,
+    outOfOfficeHours,
+    weeklyCapacityHours,
+  };
+}
+
 export function analyzeTeamCapacity(
   members: CapacityMember[],
   tasks: CapacityTask[],
@@ -103,6 +128,7 @@ export function analyzeTeamCapacity(
   lastWeek.setDate(lastWeek.getDate() - 7);
 
   const snapshots = members.map((member) => {
+    const capacity = resolveMemberCapacity(member);
     const assignedTasks = tasks.filter((task) => task.assigneeId === member.id);
     const activeTasks = assignedTasks.filter((task) => isActive(task.status));
     const overdueTasks = activeTasks.filter((task) => task.dueDate && new Date(task.dueDate) < today).length;
@@ -114,7 +140,7 @@ export function analyzeTeamCapacity(
     const blockedTasks = activeTasks.filter((task) => task.labels.includes("Blocked")).length;
     const projectedHours = Math.round(activeTasks.reduce((sum, task) => sum + estimateTaskHours(task), 0));
     const loggedHours = Math.round(activeTasks.reduce((sum, task) => sum + (task.loggedH ?? 0), 0));
-    const weeklyCapacityHours = roleCapacity[member.role];
+    const weeklyCapacityHours = capacity.weeklyCapacityHours;
     const utilization = weeklyCapacityHours === 0 ? 0 : Math.round((projectedHours / weeklyCapacityHours) * 100);
     const availableHours = Math.max(0, weeklyCapacityHours - projectedHours);
     const completedLast7Days = assignedTasks.filter(
@@ -145,6 +171,10 @@ export function analyzeTeamCapacity(
 
     return {
       ...member,
+      defaultRoleCapacityHours: capacity.defaultRoleCapacityHours,
+      configuredCapacityHours: capacity.configuredCapacityHours,
+      reservedHours: capacity.reservedHours,
+      outOfOfficeHours: capacity.outOfOfficeHours,
       weeklyCapacityHours,
       projectedHours,
       loggedHours,
@@ -176,6 +206,8 @@ export function analyzeTeamCapacity(
       watchMembers: snapshots.filter((member) => member.loadState === "watch").length,
       dueThisWeekTasks: snapshots.reduce((sum, member) => sum + member.dueThisWeekTasks, 0),
       blockedTasks: snapshots.reduce((sum, member) => sum + member.blockedTasks, 0),
+      reservedHours: snapshots.reduce((sum, member) => sum + member.reservedHours, 0),
+      outOfOfficeHours: snapshots.reduce((sum, member) => sum + member.outOfOfficeHours, 0),
       weeklyCapacityHours: snapshots.reduce((sum, member) => sum + member.weeklyCapacityHours, 0),
       projectedHours: snapshots.reduce((sum, member) => sum + member.projectedHours, 0),
     },

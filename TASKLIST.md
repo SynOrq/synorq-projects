@@ -19,7 +19,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Health score persistence or derived strategy
 - [x] Milestone veri modeli eklenecek
 - [x] Risk register veri modeli eklenecek
-- [ ] Team capacity/workload veri modeli eklenecek
+- [x] Team capacity/workload veri modeli eklenecek
 - [ ] Audit event taxonomy genisletilecek
   - [x] project.created
   - [x] project.updated
@@ -28,6 +28,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] task.due_date_changed
   - [x] risk.created / updated
   - [x] milestone.created / updated
+  - [x] workspace.member.capacity_updated
   - [x] workspace.preference_changed
   - [x] export.created
 - [ ] Ortak analytics helpers genisletilecek
@@ -117,7 +118,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] owner / due date
   - [x] linked project and tasks
   - [x] status workflow
-- [ ] Team capacity module
+- [x] Team capacity module
   - [x] active load by user
   - [x] due-date density
   - [x] weekly capacity

@@ -114,6 +114,13 @@ async function seed() {
   const clientIndex = {};
 
   const defaultPassword = await bcrypt.hash("demo12345", 10);
+  const capacityBlueprints = {
+    owner: { weeklyCapacityHours: 28, reservedHours: 4, outOfOfficeHours: 0 },
+    opsLead: { weeklyCapacityHours: 30, reservedHours: 6, outOfOfficeHours: 0 },
+    deliveryManager: { weeklyCapacityHours: 34, reservedHours: 4, outOfOfficeHours: 0 },
+    designer: { weeklyCapacityHours: 30, reservedHours: 2, outOfOfficeHours: 0 },
+    engineer: { weeklyCapacityHours: 36, reservedHours: 1, outOfOfficeHours: 0 },
+  };
 
   for (const person of demoPeople) {
     const user = await prisma.user.upsert({
@@ -146,6 +153,29 @@ async function seed() {
         workspaceId: workspace.id,
         userId: user.id,
         role: person.role,
+      },
+    });
+  }
+
+  const workspaceMemberships = await prisma.workspaceMember.findMany({
+    where: { workspaceId: workspace.id },
+  });
+  const workspaceMemberByUserId = Object.fromEntries(
+    workspaceMemberships.map((membership) => [membership.userId, membership])
+  );
+
+  for (const [key, userId] of Object.entries(memberIndex)) {
+    const membership = workspaceMemberByUserId[userId];
+    const capacityProfile = capacityBlueprints[key];
+
+    if (!membership || !capacityProfile) continue;
+
+    await prisma.workspaceMemberCapacity.upsert({
+      where: { workspaceMemberId: membership.id },
+      update: capacityProfile,
+      create: {
+        workspaceMemberId: membership.id,
+        ...capacityProfile,
       },
     });
   }

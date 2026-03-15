@@ -103,8 +103,9 @@ model WorkspaceMember {
   role        WorkspaceRole @default(MEMBER)
   joinedAt    DateTime      @default(now())
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace       Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user            User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  capacityProfile WorkspaceMemberCapacity?
 
   @@unique([workspaceId, userId])
 }
@@ -113,6 +114,18 @@ enum WorkspaceRole {
   ADMIN
   MEMBER
   VIEWER
+}
+
+model WorkspaceMemberCapacity {
+  id                  String   @id @default(cuid())
+  workspaceMemberId   String   @unique
+  weeklyCapacityHours Int?
+  reservedHours       Int      @default(0)
+  outOfOfficeHours    Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  workspaceMember WorkspaceMember @relation(fields: [workspaceMemberId], references: [id], onDelete: Cascade)
 }
 
 // ─── Project ─────────────────────────────────────────────────────────────────

@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { startTransition, useMemo, useState } from "react";
 import { AlertTriangle, CalendarRange, Mail, ShieldAlert, UserPlus, Users, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,17 @@ type MemberRecord = {
     image: string | null;
     createdAt: Date | string;
   };
+  capacityProfile?: {
+    weeklyCapacityHours: number | null;
+    reservedHours: number;
+    outOfOfficeHours: number;
+  } | null;
+};
+
+type CapacityDraft = {
+  weeklyCapacityHours: string;
+  reservedHours: string;
+  outOfOfficeHours: string;
 };
 
 type Props = {
@@ -38,6 +50,8 @@ type Props = {
       watchMembers: number;
       dueThisWeekTasks: number;
       blockedTasks: number;
+      reservedHours: number;
+      outOfOfficeHours: number;
       weeklyCapacityHours: number;
       projectedHours: number;
     };
@@ -65,6 +79,17 @@ function heatColor(value: number, max: number) {
   return "bg-cyan-100 text-cyan-700";
 }
 
+function createCapacityDraft(member: MemberRecord): CapacityDraft {
+  return {
+    weeklyCapacityHours:
+      member.capacityProfile?.weeklyCapacityHours === null || member.capacityProfile?.weeklyCapacityHours === undefined
+        ? ""
+        : String(member.capacityProfile.weeklyCapacityHours),
+    reservedHours: String(member.capacityProfile?.reservedHours ?? 0),
+    outOfOfficeHours: String(member.capacityProfile?.outOfOfficeHours ?? 0),
+  };
+}
+
 export default function TeamCapacityConsole({
   workspaceId,
   workspaceName,
@@ -75,13 +100,18 @@ export default function TeamCapacityConsole({
   spotlightMemberId,
   capacity,
 }: Props) {
+  const router = useRouter();
   const [members, setMembers] = useState(initialMembers);
+  const [capacityDrafts, setCapacityDrafts] = useState<Record<string, CapacityDraft>>(() =>
+    Object.fromEntries(initialMembers.map((member) => [member.id, createCapacityDraft(member)]))
+  );
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<MemberRecord["role"]>("MEMBER");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savingMemberId, setSavingMemberId] = useState<string | null>(null);
+  const [savingCapacityMemberId, setSavingCapacityMemberId] = useState<string | null>(null);
 
   const memberStats = useMemo(() => {
     const admins = members.filter((member) => member.role === "ADMIN").length;
@@ -125,9 +155,14 @@ export default function TeamCapacityConsole({
       }
 
       setMembers((current) => [...current, data.member]);
+      setCapacityDrafts((current) => ({
+        ...current,
+        [data.member.id]: createCapacityDraft(data.member),
+      }));
       setInviteEmail("");
       setInviteRole("MEMBER");
       setInviteMessage(data.message ?? "Uye workspace'e eklendi.");
+      startTransition(() => router.refresh());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Uye daveti gonderilemedi.");
     } finally {
@@ -158,15 +193,92 @@ export default function TeamCapacityConsole({
             ? {
                 ...member,
                 role: data.member.role,
+                capacityProfile: data.member.capacityProfile,
               }
             : member
         )
       );
+      setCapacityDrafts((current) => ({
+        ...current,
+        [memberId]: createCapacityDraft(data.member),
+      }));
       setInviteMessage("Uye rolu guncellendi.");
+      startTransition(() => router.refresh());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Rol guncellenemedi.");
     } finally {
       setSavingMemberId(null);
+    }
+  }
+
+  function updateCapacityDraft(memberId: string, field: keyof CapacityDraft, value: string) {
+    setCapacityDrafts((current) => ({
+      ...current,
+      [memberId]: {
+        ...(current[memberId] ?? { weeklyCapacityHours: "", reservedHours: "0", outOfOfficeHours: "0" }),
+        [field]: value,
+      },
+    }));
+  }
+
+  async function saveCapacity(member: MemberRecord) {
+    const draft = capacityDrafts[member.id] ?? createCapacityDraft(member);
+    const weeklyCapacityHours =
+      draft.weeklyCapacityHours.trim() === "" ? null : Number(draft.weeklyCapacityHours.trim());
+    const reservedHours = draft.reservedHours.trim() === "" ? 0 : Number(draft.reservedHours.trim());
+    const outOfOfficeHours = draft.outOfOfficeHours.trim() === "" ? 0 : Number(draft.outOfOfficeHours.trim());
+
+    if (
+      (weeklyCapacityHours !== null && (!Number.isFinite(weeklyCapacityHours) || weeklyCapacityHours < 0)) ||
+      !Number.isFinite(reservedHours) ||
+      reservedHours < 0 ||
+      !Number.isFinite(outOfOfficeHours) ||
+      outOfOfficeHours < 0
+    ) {
+      setError("Kapasite alanlari 0 veya daha buyuk sayilar olmali.");
+      return;
+    }
+
+    setSavingCapacityMemberId(member.id);
+    setError(null);
+    setInviteMessage(null);
+
+    try {
+      const res = await fetch(`/api/workspace/members/${member.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          weeklyCapacityHours,
+          reservedHours,
+          outOfOfficeHours,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error ?? "Kapasite profili guncellenemedi.");
+      }
+
+      setMembers((current) =>
+        current.map((item) =>
+          item.id === member.id
+            ? {
+                ...item,
+                capacityProfile: data.member.capacityProfile,
+              }
+            : item
+        )
+      );
+      setCapacityDrafts((current) => ({
+        ...current,
+        [member.id]: createCapacityDraft(data.member),
+      }));
+      setInviteMessage("Kapasite profili guncellendi.");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kapasite profili guncellenemedi.");
+    } finally {
+      setSavingCapacityMemberId(null);
     }
   }
 
@@ -191,7 +303,11 @@ export default function TeamCapacityConsole({
             <div className="grid gap-3 sm:grid-cols-3">
               <MetricCard label="Toplam uye" value={String(capacity.summary.totalMembers)} note={`${memberStats.admins} admin`} />
               <MetricCard label="Yuksek yuk" value={String(capacity.summary.overloadedMembers)} note={`${capacity.summary.watchMembers} izleniyor`} />
-              <MetricCard label="Kapasite" value={`${capacity.summary.projectedHours}/${capacity.summary.weeklyCapacityHours}h`} note="haftalik tahmini yuk" />
+              <MetricCard
+                label="Kapasite"
+                value={`${capacity.summary.projectedHours}/${capacity.summary.weeklyCapacityHours}h`}
+                note={`${capacity.summary.reservedHours}h reserve • ${capacity.summary.outOfOfficeHours}h OOO`}
+              />
             </div>
           </div>
         </div>
@@ -293,6 +409,10 @@ export default function TeamCapacityConsole({
                         <div className="mt-1 text-sm font-semibold text-slate-900">{member.completedLast7Days}</div>
                       </div>
                     </div>
+                    <div className="mt-3 text-[11px] text-slate-500">
+                      Varsayilan {member.defaultRoleCapacityHours}h • Konfig {member.configuredCapacityHours}h • Reserve {member.reservedHours}h • OOO{" "}
+                      {member.outOfOfficeHours}h
+                    </div>
                   </div>
                 </div>
 
@@ -375,11 +495,124 @@ export default function TeamCapacityConsole({
               <GuidanceItem
                 tone="info"
                 title="Role capacity"
-                body="Admin 30h, Member 34h, Viewer 10h haftalik kapasite varsayimi ile hesaplanir."
+                body="Admin 30h, Member 34h, Viewer 10h default kapasite; override yoksa bu baz kullanilir."
               />
             </div>
           </section>
         </div>
+      </section>
+
+      <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="text-lg font-black text-slate-950">Capacity policy</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Uye bazli haftalik kapasite override, reserve ve out-of-office saatlerini kalici olarak yonetin.
+            </p>
+          </div>
+          <div className="text-xs font-medium text-slate-400">
+            Override bossa role default kapasitesi kullanilir.
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 xl:grid-cols-2">
+          {members.map((member) => {
+            const capacityRecord = capacity.snapshots.find((item) => item.id === member.user.id);
+            const draft = capacityDrafts[member.id] ?? createCapacityDraft(member);
+            const canEditCapacity = canManageMembers;
+
+            return (
+              <div key={`capacity-${member.id}`} className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <Avatar name={member.user.name ?? member.user.email} image={member.user.image} size="sm" />
+                      <div>
+                        <div className="text-sm font-black text-slate-950">{member.user.name ?? "Kullanici"}</div>
+                        <div className="mt-1 text-xs text-slate-500">{member.user.email}</div>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">{member.role}</span>
+                      {capacityRecord && (
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            capacityRecord.loadState === "overloaded"
+                              ? "bg-red-50 text-red-700"
+                              : capacityRecord.loadState === "watch"
+                                ? "bg-amber-50 text-amber-700"
+                                : "bg-emerald-50 text-emerald-700"
+                          }`}
+                        >
+                          %{capacityRecord.utilization} {capacityRecord.loadState}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {capacityRecord && (
+                    <div className="grid grid-cols-2 gap-3 text-xs text-slate-500">
+                      <StatChip label="Efektif kapasite" value={`${capacityRecord.weeklyCapacityHours}h`} />
+                      <StatChip label="Tahmin" value={`${capacityRecord.projectedHours}h`} />
+                      <StatChip label="Reserve" value={`${capacityRecord.reservedHours}h`} />
+                      <StatChip label="OOO" value={`${capacityRecord.outOfOfficeHours}h`} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-3">
+                  <Input
+                    id={`member-${member.id}-weekly-capacity`}
+                    label="Weekly override"
+                    inputMode="numeric"
+                    placeholder={capacityRecord ? String(capacityRecord.defaultRoleCapacityHours) : "Role default"}
+                    value={draft.weeklyCapacityHours}
+                    onChange={(event) => updateCapacityDraft(member.id, "weeklyCapacityHours", event.target.value)}
+                    disabled={!canEditCapacity || savingCapacityMemberId === member.id}
+                  />
+                  <Input
+                    id={`member-${member.id}-reserved-hours`}
+                    label="Reserve hours"
+                    inputMode="numeric"
+                    value={draft.reservedHours}
+                    onChange={(event) => updateCapacityDraft(member.id, "reservedHours", event.target.value)}
+                    disabled={!canEditCapacity || savingCapacityMemberId === member.id}
+                  />
+                  <Input
+                    id={`member-${member.id}-out-of-office-hours`}
+                    label="Out of office"
+                    inputMode="numeric"
+                    value={draft.outOfOfficeHours}
+                    onChange={(event) => updateCapacityDraft(member.id, "outOfOfficeHours", event.target.value)}
+                    disabled={!canEditCapacity || savingCapacityMemberId === member.id}
+                  />
+                </div>
+
+                <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="text-xs text-slate-500">
+                    {capacityRecord
+                      ? `Default ${capacityRecord.defaultRoleCapacityHours}h tabani uzerinden efektif ${capacityRecord.weeklyCapacityHours}h hesaplanir.`
+                      : "Kapasite kaydi bir sonraki refresh ile hesaplanir."}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    onClick={() => saveCapacity(member)}
+                    loading={savingCapacityMemberId === member.id}
+                    disabled={!canEditCapacity}
+                  >
+                    Kapasiteyi kaydet
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {!canManageMembers && (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            Kapasite politikasi degisikligi icin yonetici yetkisi gerekir.
+          </div>
+        )}
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -389,7 +622,7 @@ export default function TeamCapacityConsole({
             Uye davet et
           </div>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Mevcut kayitli kullaniciyi workspace'e ekleyin ve ekip kapasitesini role bazli genisletin.
+            Mevcut kayitli kullaniciyi workspace&apos;e ekleyin ve ekip kapasitesini role bazli genisletin.
           </p>
 
           <div className="mt-6 space-y-4">

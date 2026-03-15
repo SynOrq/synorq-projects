@@ -70,8 +70,18 @@ export async function POST(req: NextRequest) {
         workspaceId: workspace.id,
         userId: user.id,
         role: role as "ADMIN" | "MEMBER" | "VIEWER",
+        capacityProfile: {
+          create: {},
+        },
       },
       include: {
+        capacityProfile: {
+          select: {
+            weeklyCapacityHours: true,
+            reservedHours: true,
+            outOfOfficeHours: true,
+          },
+        },
         user: { select: { id: true, name: true, email: true, image: true, createdAt: true } },
       },
     });

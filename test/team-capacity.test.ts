@@ -21,6 +21,11 @@ test("analyzeTeamCapacity computes utilization, load state and heatmap", () => {
         email: "elif@synorq.com",
         image: null,
         role: "MEMBER",
+        capacityProfile: {
+          weeklyCapacityHours: 32,
+          reservedHours: 4,
+          outOfOfficeHours: 8,
+        },
       },
     ],
     [
@@ -72,8 +77,51 @@ test("analyzeTeamCapacity computes utilization, load state and heatmap", () => {
   assert.equal(result.snapshots[0]?.utilization, 73);
   assert.equal(result.snapshots[0]?.loadState, "watch");
   assert.equal(result.summary.dueThisWeekTasks, 2);
-  assert.equal(result.summary.weeklyCapacityHours, 64);
+  assert.equal(result.summary.weeklyCapacityHours, 50);
+  assert.equal(result.summary.reservedHours, 4);
+  assert.equal(result.summary.outOfOfficeHours, 8);
   assert.equal(result.heatmap.days.length, 7);
   assert.equal(result.heatmap.rows.find((row) => row.memberId === "user_1")?.values[0], 1);
   assert.equal(result.heatmap.rows.find((row) => row.memberId === "user_1")?.values[2], 1);
+});
+
+test("analyzeTeamCapacity applies capacity overrides before utilization thresholds", () => {
+  const result = analyzeTeamCapacity(
+    [
+      {
+        id: "user_1",
+        name: "Tarik",
+        email: "tarik@synorq.com",
+        image: null,
+        role: "MEMBER",
+        capacityProfile: {
+          weeklyCapacityHours: 24,
+          reservedHours: 2,
+          outOfOfficeHours: 0,
+        },
+      },
+    ],
+    [
+      {
+        id: "task_1",
+        title: "Launch checklist",
+        status: "IN_PROGRESS",
+        priority: "URGENT",
+        dueDate: new Date("2026-03-17T00:00:00.000Z"),
+        completedAt: null,
+        assigneeId: "user_1",
+        estimatedH: 20,
+        loggedH: 5,
+        labels: [],
+        project: { id: "project_1", name: "Northstar", color: "#2563eb" },
+      },
+    ],
+    now
+  );
+
+  assert.equal(result.snapshots[0]?.defaultRoleCapacityHours, 34);
+  assert.equal(result.snapshots[0]?.configuredCapacityHours, 24);
+  assert.equal(result.snapshots[0]?.weeklyCapacityHours, 22);
+  assert.equal(result.snapshots[0]?.utilization, 91);
+  assert.equal(result.snapshots[0]?.loadState, "overloaded");
 });

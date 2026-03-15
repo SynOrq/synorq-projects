@@ -21,6 +21,13 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
     include: {
       members: {
         include: {
+          capacityProfile: {
+            select: {
+              weeklyCapacityHours: true,
+              reservedHours: true,
+              outOfOfficeHours: true,
+            },
+          },
           user: { select: { id: true, name: true, email: true, image: true, createdAt: true } },
         },
         orderBy: { joinedAt: "asc" },
@@ -65,6 +72,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
       image: member.user.image,
       role: member.role,
       isOwner: member.user.id === workspace.ownerId,
+      capacityProfile: member.capacityProfile,
     })),
     workspace.projects.flatMap((project) => project.tasks)
   );
