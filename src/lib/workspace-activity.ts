@@ -29,6 +29,7 @@ function readMetadata(value: unknown): ActivityMetadata {
 function getActivityCategory(action: string): ActivityCategory {
   if (action.startsWith("workspace.member")) return "team";
   if (action.startsWith("workspace.")) return "workspace";
+  if (action.startsWith("client.portal")) return "project";
   if (action.startsWith("milestone.") || action.startsWith("risk.") || action.startsWith("project.")) return "project";
   if (action.startsWith("task.attachment")) return "file";
   return "task";
@@ -59,6 +60,10 @@ function getActivityTitle(action: string) {
     "project.created": "Yeni proje olusturuldu",
     "workspace.updated": "Workspace ayarlari guncellendi",
     "workspace.preference_changed": "Bildirim tercihleri guncellendi",
+    "client.portal_published": "Client portal yayinlandi",
+    "client.portal_updated": "Client portal guncellendi",
+    "client.portal_unpublished": "Client portal taslaga alindi",
+    "client.portal_token_regenerated": "Client portal linki yenilendi",
     "workspace.member.invited": "Yeni ekip uyesi davet edildi",
     "workspace.member.role_updated": "Rol yetkisi guncellendi",
     "task.created": "Yeni gorev olusturuldu",
@@ -98,6 +103,14 @@ function getActivityDetail(params: {
       return `${params.actorName} workspace kimligini guncelledi.`;
     case "workspace.preference_changed":
       return `${params.actorName} bildirim tercihlerini guncelledi${metadata?.preferenceKeys?.length ? ` • ${metadata.preferenceKeys.join(", ")}` : ""}.`;
+    case "client.portal_published":
+      return `${params.actorName} ${metadata?.clientName ?? "client"} icin read-only portal yayina aldi.`;
+    case "client.portal_updated":
+      return `${params.actorName} ${metadata?.clientName ?? "client"} portal mesajini veya gorunumunu guncelledi.`;
+    case "client.portal_unpublished":
+      return `${params.actorName} ${metadata?.clientName ?? "client"} portalini taslak moduna aldi.`;
+    case "client.portal_token_regenerated":
+      return `${params.actorName} ${metadata?.clientName ?? "client"} portal baglantisini yeniledi.`;
     case "workspace.member.invited":
       return `${params.actorName} ${targetName} kisini ekibe davet etti.`;
     case "workspace.member.role_updated":

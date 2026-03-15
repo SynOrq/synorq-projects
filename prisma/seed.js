@@ -189,6 +189,17 @@ async function seed() {
       health: "WATCH",
       notes: "Launch visibility is high and approval loops are tight.",
       ownerId: memberIndex.opsLead,
+      contractValue: 240000,
+      contractStartDate: daysFromNow(-45),
+      contractEndDate: daysFromNow(120),
+      retainerCadence: "PROJECT",
+      retainerStatus: "ACTIVE",
+      portal: {
+        isPublished: true,
+        welcomeTitle: "Northstar delivery portal",
+        welcomeMessage: "Launch prep, approval signals and near-term delivery items tek akista gosterilir.",
+        accentColor: "#2563eb",
+      },
     },
     {
       key: "atlas",
@@ -197,6 +208,17 @@ async function seed() {
       health: "WATCH",
       notes: "Mobile pilot needs close release governance.",
       ownerId: memberIndex.deliveryManager,
+      contractValue: 180000,
+      contractStartDate: daysFromNow(-60),
+      contractEndDate: daysFromNow(90),
+      retainerCadence: "PROJECT",
+      retainerStatus: "ACTIVE",
+      portal: {
+        isPublished: true,
+        welcomeTitle: "Atlas pilot portal",
+        welcomeMessage: "Mobile pilot release, field enablement ve regression kapanislari client ozetinde toplanir.",
+        accentColor: "#0f766e",
+      },
     },
     {
       key: "helio",
@@ -205,6 +227,17 @@ async function seed() {
       health: "AT_RISK",
       notes: "Retainer scope is active and review requests are frequent.",
       ownerId: memberIndex.opsLead,
+      contractValue: 36000,
+      contractStartDate: daysFromNow(-180),
+      contractEndDate: daysFromNow(18),
+      retainerCadence: "MONTHLY",
+      retainerStatus: "RENEWAL_DUE",
+      portal: {
+        isPublished: false,
+        welcomeTitle: "Helio sprint portal",
+        welcomeMessage: "Retainer sprint ritmi, review pressure ve teslim takvimi draft modunda tutulur.",
+        accentColor: "#ea580c",
+      },
     },
   ];
 
@@ -223,6 +256,11 @@ async function seed() {
         health: client.health,
         notes: client.notes,
         ownerId: client.ownerId,
+        contractValue: client.contractValue,
+        contractStartDate: client.contractStartDate,
+        contractEndDate: client.contractEndDate,
+        retainerCadence: client.retainerCadence,
+        retainerStatus: client.retainerStatus,
       },
       create: {
         workspaceId: workspace.id,
@@ -232,10 +270,34 @@ async function seed() {
         industry: client.industry,
         health: client.health,
         notes: client.notes,
+        contractValue: client.contractValue,
+        contractStartDate: client.contractStartDate,
+        contractEndDate: client.contractEndDate,
+        retainerCadence: client.retainerCadence,
+        retainerStatus: client.retainerStatus,
       },
     });
 
     clientIndex[client.key] = record.id;
+
+    await prisma.clientPortal.upsert({
+      where: { clientId: record.id },
+      update: {
+        isPublished: client.portal.isPublished,
+        welcomeTitle: client.portal.welcomeTitle,
+        welcomeMessage: client.portal.welcomeMessage,
+        accentColor: client.portal.accentColor,
+        publishedAt: client.portal.isPublished ? new Date() : null,
+      },
+      create: {
+        clientId: record.id,
+        isPublished: client.portal.isPublished,
+        welcomeTitle: client.portal.welcomeTitle,
+        welcomeMessage: client.portal.welcomeMessage,
+        accentColor: client.portal.accentColor,
+        publishedAt: client.portal.isPublished ? new Date() : null,
+      },
+    });
   }
 
   await prisma.workspaceUserState.upsert({

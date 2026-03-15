@@ -1,6 +1,8 @@
 import "./settings-api.test.ts";
 import "./activity.test.ts";
 import "./portfolio.test.ts";
+import "./analytics.test.ts";
+import "./client-portal.test.ts";
 import "./team-capacity.test.ts";
 import "./reports.test.ts";
 import "./command-center.test.ts";

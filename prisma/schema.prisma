@@ -181,20 +181,26 @@ enum ProjectType {
 }
 
 model Client {
-  id          String       @id @default(cuid())
-  workspaceId String
-  ownerId     String?
-  name        String
-  slug        String
-  industry    String?
-  notes       String?
-  health      ClientHealth @default(STABLE)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id                String         @id @default(cuid())
+  workspaceId       String
+  ownerId           String?
+  name              String
+  slug              String
+  industry          String?
+  notes             String?
+  contractValue     Int?
+  contractStartDate DateTime?
+  contractEndDate   DateTime?
+  retainerCadence   RetainerCadence?
+  retainerStatus    RetainerStatus?
+  health            ClientHealth   @default(STABLE)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   owner     User?     @relation("ClientOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   projects  Project[]
+  portal    ClientPortal?
 
   @@unique([workspaceId, slug])
 }
@@ -203,6 +209,35 @@ enum ClientHealth {
   STABLE
   WATCH
   AT_RISK
+}
+
+enum RetainerCadence {
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+  PROJECT
+}
+
+enum RetainerStatus {
+  ACTIVE
+  RENEWAL_DUE
+  PAUSED
+  ENDED
+}
+
+model ClientPortal {
+  id             String   @id @default(cuid())
+  clientId       String   @unique
+  shareToken     String   @unique @default(cuid())
+  isPublished    Boolean  @default(false)
+  welcomeTitle   String?
+  welcomeMessage String?
+  accentColor    String   @default("#0f172a")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  publishedAt    DateTime?
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 // ─── Section ─────────────────────────────────────────────────────────────────

@@ -41,7 +41,31 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
     },
     include: {
       owner: { select: { id: true, name: true, email: true } },
-      client: { select: { id: true, name: true, health: true } },
+      client: {
+        select: {
+          id: true,
+          name: true,
+          health: true,
+          industry: true,
+          notes: true,
+          contractValue: true,
+          contractStartDate: true,
+          contractEndDate: true,
+          retainerCadence: true,
+          retainerStatus: true,
+          portal: {
+            select: {
+              isPublished: true,
+              shareToken: true,
+              welcomeTitle: true,
+              welcomeMessage: true,
+              accentColor: true,
+              publishedAt: true,
+            },
+          },
+          owner: { select: { name: true, email: true } },
+        },
+      },
       sections: {
         orderBy: { order: "asc" },
         include: {
@@ -319,6 +343,31 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
             priority: project.priority,
             ownerId: project.ownerId,
             clientId: project.clientId,
+            client: project.client
+              ? {
+                  id: project.client.id,
+                  name: project.client.name,
+                  health: project.client.health,
+                  industry: project.client.industry,
+                  notes: project.client.notes,
+                  contractValue: project.client.contractValue,
+                  contractStartDate: project.client.contractStartDate,
+                  contractEndDate: project.client.contractEndDate,
+                  retainerCadence: project.client.retainerCadence,
+                  retainerStatus: project.client.retainerStatus,
+                  ownerName: project.client.owner?.name ?? project.client.owner?.email ?? null,
+                  portal: project.client.portal
+                    ? {
+                        isPublished: project.client.portal.isPublished,
+                        shareToken: project.client.portal.shareToken,
+                        welcomeTitle: project.client.portal.welcomeTitle,
+                        welcomeMessage: project.client.portal.welcomeMessage,
+                        accentColor: project.client.portal.accentColor,
+                        publishedAt: project.client.portal.publishedAt,
+                      }
+                    : null,
+                }
+              : null,
             tags: project.tags,
             startDate: project.startDate,
             dueDate: analyzedProject.dueDateResolved,
@@ -347,6 +396,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
           ownerOptions={ownerOptions}
           clientOptions={clientOptions}
           taskOptions={taskOptions}
+          canManageClientPortal={project.workspace.ownerId === userId || currentMembership.role === "ADMIN"}
         />
       </div>
     </div>

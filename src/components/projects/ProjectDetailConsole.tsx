@@ -9,6 +9,15 @@ import type { TaskCardData } from "@/lib/task-detail";
 import ProjectSettingsPanel from "@/components/projects/ProjectSettingsPanel";
 import MilestoneManager from "@/components/projects/MilestoneManager";
 import RiskManager from "@/components/projects/RiskManager";
+import ClientPortalManager from "@/components/projects/ClientPortalManager";
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
 type Member = {
   id: string;
@@ -89,6 +98,27 @@ type Props = {
     priority: string;
     ownerId: string | null;
     clientId: string | null;
+    client: {
+      id: string;
+      name: string;
+      health: "STABLE" | "WATCH" | "AT_RISK";
+      industry: string | null;
+      notes: string | null;
+      contractValue: number | null;
+      contractStartDate: Date | null;
+      contractEndDate: Date | null;
+      retainerCadence: string | null;
+      retainerStatus: string | null;
+      ownerName: string | null;
+      portal: {
+        isPublished: boolean;
+        shareToken: string | null;
+        welcomeTitle: string | null;
+        welcomeMessage: string | null;
+        accentColor: string;
+        publishedAt: Date | null;
+      } | null;
+    } | null;
     tags: string[];
     startDate: Date | null;
     dueDate: Date | null;
@@ -133,6 +163,7 @@ type Props = {
   ownerOptions: Array<{ value: string; label: string }>;
   clientOptions: Array<{ value: string; label: string }>;
   taskOptions: Array<{ value: string; label: string }>;
+  canManageClientPortal: boolean;
 };
 
 function severityBadge(severity: "info" | "warning" | "critical") {
@@ -157,6 +188,7 @@ export default function ProjectDetailConsole({
   ownerOptions,
   clientOptions,
   taskOptions,
+  canManageClientPortal,
 }: Props) {
   const visibilityMeta = getProjectVisibilityMeta(project.visibility as "WORKSPACE" | "MEMBERS" | "LEADERSHIP" | "PRIVATE");
   const blockers = tasks.filter((task) => task.labels.includes("Blocked") || (task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "DONE"));
@@ -646,6 +678,67 @@ export default function ProjectDetailConsole({
           </div>
         </div>
       </section>
+
+      {project.client && (
+        <section className="space-y-4 rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Client layer</div>
+              <h2 className="mt-2 text-2xl font-black text-slate-950">{project.client.name}</h2>
+            </div>
+            <Badge variant={project.client.health === "AT_RISK" ? "danger" : project.client.health === "WATCH" ? "warning" : "success"}>
+              {project.client.health === "AT_RISK" ? "At risk" : project.client.health === "WATCH" ? "Watch" : "Stable"}
+            </Badge>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl bg-slate-50 px-4 py-4">
+              <div className="text-xs text-slate-400">Client owner</div>
+              <div className="mt-2 text-lg font-black text-slate-950">{project.client.ownerName ?? "Atanmamis"}</div>
+              <div className="mt-1 text-sm text-slate-500">{project.client.industry ?? "Industry tanimsiz"}</div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 px-4 py-4">
+              <div className="text-xs text-slate-400">Contract value</div>
+              <div className="mt-2 text-lg font-black text-slate-950">
+                {project.client.contractValue ? formatCurrency(project.client.contractValue) : "Tanimsiz"}
+              </div>
+              <div className="mt-1 text-sm text-slate-500">
+                {project.client.contractStartDate ? formatDate(project.client.contractStartDate) : "Baslangic yok"} -{" "}
+                {project.client.contractEndDate ? formatDate(project.client.contractEndDate) : "bitis yok"}
+              </div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 px-4 py-4">
+              <div className="text-xs text-slate-400">Retainer cadence</div>
+              <div className="mt-2 text-lg font-black text-slate-950">{project.client.retainerCadence ?? "Project-based"}</div>
+              <div className="mt-1 text-sm text-slate-500">{project.client.retainerStatus ?? "Status tanimsiz"}</div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 px-4 py-4">
+              <div className="text-xs text-slate-400">Delivery note</div>
+              <div className="mt-2 text-sm font-semibold leading-6 text-slate-900">
+                {project.client.notes ?? "Client notu bulunmuyor."}
+              </div>
+            </div>
+          </div>
+
+          <ClientPortalManager
+            clientId={project.client.id}
+            clientName={project.client.name}
+            canManage={canManageClientPortal}
+            initialPortal={
+              project.client.portal
+                ? {
+                    isPublished: project.client.portal.isPublished,
+                    shareToken: project.client.portal.shareToken,
+                    welcomeTitle: project.client.portal.welcomeTitle,
+                    welcomeMessage: project.client.portal.welcomeMessage,
+                    accentColor: project.client.portal.accentColor,
+                    publishedAt: project.client.portal.publishedAt,
+                  }
+                : null
+            }
+          />
+        </section>
+      )}
     </div>
   );
 }

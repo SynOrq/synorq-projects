@@ -38,6 +38,7 @@ export function getActivityCategory(action: string): ActivityCategory {
   if (action.startsWith("workspace.member")) return "team";
   if (action.startsWith("workspace.")) return "workspace";
   if (action === "export.created") return "workspace";
+  if (action.startsWith("client.portal")) return "project";
   if (action.startsWith("milestone.") || action.startsWith("risk.")) return "project";
   if (action.startsWith("project.")) return "project";
   if (action.startsWith("task.attachment")) return "file";
@@ -63,6 +64,7 @@ export function getActivitySeverity(action: string, metadataValue: unknown): Act
   }
   if (action === "workspace.preference_changed") return "info";
   if (action === "export.created") return "info";
+  if (action.startsWith("client.portal")) return "info";
   if (action === "task.moved" || action === "task.updated" || action === "project.created") return "info";
   if (action === "task.deleted") return "critical";
   return "info";
@@ -74,6 +76,10 @@ export function getActivityTitle(action: string) {
     "workspace.updated": "Workspace ayarlari guncellendi",
     "workspace.preference_changed": "Bildirim tercihleri guncellendi",
     "export.created": "Export olusturuldu",
+    "client.portal_published": "Client portal yayinlandi",
+    "client.portal_updated": "Client portal guncellendi",
+    "client.portal_unpublished": "Client portal taslaga alindi",
+    "client.portal_token_regenerated": "Client portal linki yenilendi",
     "workspace.member.invited": "Yeni ekip uyesi davet edildi",
     "workspace.member.role_updated": "Rol yetkisi guncellendi",
     "task.created": "Yeni gorev olusturuldu",
@@ -115,6 +121,14 @@ export function getActivityDetail(params: {
       return `${params.actorName} bildirim tercihlerini guncelledi${metadata?.preferenceKeys?.length ? ` • ${metadata.preferenceKeys.join(", ")}` : ""}.`;
     case "export.created":
       return `${params.actorName} filtrelenmis timeline verisini disa aktardi.`;
+    case "client.portal_published":
+      return `${params.actorName} ${metadata?.clientName ?? "client"} icin read-only portal yayina aldi.`;
+    case "client.portal_updated":
+      return `${params.actorName} ${metadata?.clientName ?? "client"} portal mesajini veya gorunumunu guncelledi.`;
+    case "client.portal_unpublished":
+      return `${params.actorName} ${metadata?.clientName ?? "client"} portalini taslak moduna aldi.`;
+    case "client.portal_token_regenerated":
+      return `${params.actorName} ${metadata?.clientName ?? "client"} portal baglantisini yeniledi.`;
     case "workspace.member.invited":
       return `${params.actorName} ${targetName} kisini ekibe davet etti.`;
     case "workspace.member.role_updated":
