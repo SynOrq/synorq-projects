@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { analyzeProjects, analyzeTeamLoad, getWorkloadImbalanceScore } from "../src/lib/portfolio.ts";
+import { analyzeProjects, analyzeTeamLoad, deriveProjectHealth, getWorkloadImbalanceScore } from "../src/lib/portfolio.ts";
 
 const now = new Date("2026-03-14T10:00:00.000Z");
 
@@ -84,10 +84,27 @@ test("analyzeProjects derives health and workload signals", () => {
   assert.equal(projects[0]?.unassignedTasks, 1);
   assert.equal(projects[0]?.completionRate, 50);
   assert.equal(projects[0]?.health.key, "risk");
+  assert.equal(projects[0]?.healthStrategy, "derived");
+  assert.equal(projects[0]?.healthFactors.some((item) => item.key === "overdue"), true);
   assert.equal(projects[0]?.openMilestones, 1);
   assert.equal(projects[0]?.openRisks, 1);
   assert.equal(projects[0]?.criticalRisks, 1);
   assert.equal(projects[0]?.nextMilestone?.title, "Launch readiness");
+});
+
+test("deriveProjectHealth returns factor breakdown for derived strategy", () => {
+  const result = deriveProjectHealth({
+    overdueTasks: 2,
+    dueInDays: 4,
+    completionRate: 20,
+    unassignedTasks: 1,
+    status: "ACTIVE",
+  });
+
+  assert.equal(result.signal.key, "risk");
+  assert.equal(result.strategy, "derived");
+  assert.equal(result.factors.some((item) => item.key === "deadline"), true);
+  assert.equal(result.factors.some((item) => item.key === "completion"), true);
 });
 
 test("analyzeTeamLoad orders members by load and computes imbalance", () => {

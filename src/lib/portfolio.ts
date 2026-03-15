@@ -72,6 +72,13 @@ export type HealthSignal = {
   score: number;
 };
 
+export type HealthFactor = {
+  key: "baseline" | "overdue" | "ownership" | "deadline" | "completion" | "status";
+  label: string;
+  impact: number;
+  note: string;
+};
+
 export type AnalyzedProject = PortfolioProject & {
   totalTasks: number;
   completedTasks: number;
@@ -82,6 +89,8 @@ export type AnalyzedProject = PortfolioProject & {
   completionRate: number;
   activeAssignees: number;
   health: HealthSignal;
+  healthFactors: HealthFactor[];
+  healthStrategy: "derived";
   dueDateResolved: Date | null;
   dueInDays: number | null;
   lastActivityAt: Date;
@@ -143,46 +152,146 @@ export function getProjectHealth(params: {
   unassignedTasks: number;
   status: ProjectStatus;
 }) {
+  return deriveProjectHealth(params).signal;
+}
+
+export function deriveProjectHealth(params: {
+  overdueTasks: number;
+  dueInDays: number | null;
+  completionRate: number;
+  unassignedTasks: number;
+  status: ProjectStatus;
+}): {
+  signal: HealthSignal;
+  factors: HealthFactor[];
+  strategy: "derived";
+} {
+  const factors: HealthFactor[] = [
+    {
+      key: "baseline",
+      label: "Baseline",
+      impact: 92,
+      note: "Tum aktif projeler 92 taban skor ile baslar.",
+    },
+  ];
+
   if (params.status === "ON_HOLD") {
     return {
-      key: "steady",
-      label: "Beklemede",
-      tone: "border-amber-200 bg-amber-50 text-amber-700",
-      score: 62,
-    } satisfies HealthSignal;
+      signal: {
+        key: "steady",
+        label: "Beklemede",
+        tone: "border-amber-200 bg-amber-50 text-amber-700",
+        score: 62,
+      } satisfies HealthSignal,
+      factors: [
+        ...factors,
+        {
+          key: "status",
+          label: "Status override",
+          impact: -30,
+          note: "Beklemede durumundaki projeler izleme bandina cekilir.",
+        },
+      ],
+      strategy: "derived" as const,
+    };
   }
 
   let score = 92;
-  if (params.overdueTasks > 0) score -= Math.min(46, params.overdueTasks * 12);
-  if (params.unassignedTasks > 0) score -= Math.min(16, params.unassignedTasks * 4);
-  if (params.dueInDays !== null && params.dueInDays <= 7) score -= 8;
-  if (params.completionRate < 35) score -= 12;
-  if (params.status === "COMPLETED") score = 100;
+  if (params.overdueTasks > 0) {
+    const impact = Math.min(46, params.overdueTasks * 12);
+    score -= impact;
+    factors.push({
+      key: "overdue",
+      label: "Overdue pressure",
+      impact: -impact,
+      note: `${params.overdueTasks} overdue task veya kritik risk health skorunu asagi cekiyor.`,
+    });
+  }
+  if (params.unassignedTasks > 0) {
+    const impact = Math.min(16, params.unassignedTasks * 4);
+    score -= impact;
+    factors.push({
+      key: "ownership",
+      label: "Ownership gap",
+      impact: -impact,
+      note: `${params.unassignedTasks} sahipsiz is teslim ritmini zayiflatiyor.`,
+    });
+  }
+  if (params.dueInDays !== null && params.dueInDays <= 7) {
+    score -= 8;
+    factors.push({
+      key: "deadline",
+      label: "Deadline pressure",
+      impact: -8,
+      note: "Teslim tarihi 7 gun veya daha yakin oldugu icin baski artiyor.",
+    });
+  }
+  if (params.completionRate < 35) {
+    score -= 12;
+    factors.push({
+      key: "completion",
+      label: "Low completion",
+      impact: -12,
+      note: `Tamamlanma orani %${params.completionRate} seviyesinde kaldigi icin skor dusuyor.`,
+    });
+  }
+  if (params.status === "COMPLETED") {
+    return {
+      signal: {
+        key: "good",
+        label: "Tamamlandi",
+        tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        score: 100,
+      } satisfies HealthSignal,
+      factors: [
+        ...factors,
+        {
+          key: "status",
+          label: "Completion override",
+          impact: 8,
+          note: "Tamamlanan projeler dogrudan 100 health skoruna cekilir.",
+        },
+      ],
+      strategy: "derived" as const,
+    };
+  }
 
   if (score <= 55) {
     return {
-      key: "risk",
-      label: "Riskli",
-      tone: "border-red-200 bg-red-50 text-red-700",
-      score: Math.max(18, score),
-    } satisfies HealthSignal;
+      signal: {
+        key: "risk",
+        label: "Riskli",
+        tone: "border-red-200 bg-red-50 text-red-700",
+        score: Math.max(18, score),
+      } satisfies HealthSignal,
+      factors,
+      strategy: "derived" as const,
+    };
   }
 
   if (score <= 78) {
     return {
-      key: "steady",
-      label: "İzleniyor",
-      tone: "border-amber-200 bg-amber-50 text-amber-700",
-      score,
-    } satisfies HealthSignal;
+      signal: {
+        key: "steady",
+        label: "İzleniyor",
+        tone: "border-amber-200 bg-amber-50 text-amber-700",
+        score,
+      } satisfies HealthSignal,
+      factors,
+      strategy: "derived" as const,
+    };
   }
 
   return {
-    key: "good",
-    label: "Sağlıklı",
-    tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    score,
-  } satisfies HealthSignal;
+    signal: {
+      key: "good",
+      label: "Sağlıklı",
+      tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      score,
+    } satisfies HealthSignal,
+    factors,
+    strategy: "derived" as const,
+  };
 }
 
 export function analyzeProjects(projects: PortfolioProject[], now = new Date()) {
@@ -233,6 +342,14 @@ export function analyzeProjects(projects: PortfolioProject[], now = new Date()) 
       return updatedAt > latest ? updatedAt : latest;
     }, new Date(project.updatedAt));
 
+    const healthResult = deriveProjectHealth({
+      overdueTasks: overdueTasks + criticalRisks,
+      dueInDays,
+      completionRate,
+      unassignedTasks: unassignedTasks + openRisks,
+      status: project.status,
+    });
+
     return {
       ...project,
       totalTasks,
@@ -243,13 +360,9 @@ export function analyzeProjects(projects: PortfolioProject[], now = new Date()) 
       unassignedTasks,
       completionRate,
       activeAssignees,
-      health: getProjectHealth({
-        overdueTasks: overdueTasks + criticalRisks,
-        dueInDays,
-        completionRate,
-        unassignedTasks: unassignedTasks + openRisks,
-        status: project.status,
-      }),
+      health: healthResult.signal,
+      healthFactors: healthResult.factors,
+      healthStrategy: healthResult.strategy,
       dueDateResolved,
       dueInDays,
       lastActivityAt,

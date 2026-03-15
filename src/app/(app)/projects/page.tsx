@@ -530,7 +530,9 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                   <div>
                     <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Health</div>
                     <div className="mt-1 text-lg font-black text-slate-950">{project.health.score}</div>
-                    <div className="text-xs text-slate-500">skor</div>
+                    <div className="text-xs text-slate-500">
+                      {project.healthFactors.find((item) => item.key !== "baseline")?.label ?? "derived skor"}
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Aktif is</div>
@@ -643,6 +645,9 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                         <div className="text-sm font-black text-slate-950">{project.health.score}</div>
                         <div className="mt-1 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold text-slate-700">
                           {project.health.label}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          {project.healthFactors.find((item) => item.key !== "baseline")?.label ?? "derived"}
                         </div>
                       </td>
                       <td className="px-5 py-4">

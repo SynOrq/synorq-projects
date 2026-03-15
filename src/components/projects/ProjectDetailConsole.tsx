@@ -98,6 +98,13 @@ type Props = {
     score: number;
     label: string;
     key: "good" | "steady" | "risk";
+    factors: Array<{
+      key: string;
+      label: string;
+      impact: number;
+      note: string;
+    }>;
+    strategy: "derived";
   };
   metrics: {
     openTasks: number;
@@ -151,6 +158,10 @@ export default function ProjectDetailConsole({
 }: Props) {
   const blockers = tasks.filter((task) => task.labels.includes("Blocked") || (task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "DONE"));
   const recentDone = tasks.filter((task) => task.status === "DONE").slice(0, 4);
+  const topHealthFactors = [...health.factors]
+    .filter((item) => item.key !== "baseline")
+    .sort((left, right) => Math.abs(right.impact) - Math.abs(left.impact))
+    .slice(0, 3);
 
   if (currentTab === "board") {
     return (
@@ -435,7 +446,7 @@ export default function ProjectDetailConsole({
             <FolderKanban size={18} />
           </div>
           <div className="mt-4 text-3xl font-black text-slate-950">{health.score}</div>
-          <div className="mt-1 text-sm text-slate-500">Health score</div>
+          <div className="mt-1 text-sm text-slate-500">Health score • {health.strategy}</div>
         </div>
         <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="inline-flex rounded-2xl bg-amber-50 p-2 text-amber-700">
@@ -508,6 +519,29 @@ export default function ProjectDetailConsole({
             </div>
             <div className="h-2 rounded-full bg-slate-100">
               <div className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-cyan-500" style={{ width: `${metrics.completionRate}%` }} />
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Health strategy</div>
+                <div className="mt-1 text-sm font-black text-slate-950">Derived score drivers</div>
+              </div>
+              <Badge variant="secondary">{health.strategy}</Badge>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {(topHealthFactors.length > 0 ? topHealthFactors : health.factors.slice(0, 1)).map((factor) => (
+                <div key={factor.key} className="rounded-2xl bg-white px-4 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-sm font-black text-slate-950">{factor.label}</div>
+                    <div className={`text-sm font-black ${factor.impact < 0 ? "text-red-600" : "text-emerald-600"}`}>
+                      {factor.impact > 0 ? `+${factor.impact}` : factor.impact}
+                    </div>
+                  </div>
+                  <div className="mt-2 text-sm leading-6 text-slate-600">{factor.note}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

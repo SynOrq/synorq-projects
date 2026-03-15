@@ -16,7 +16,7 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Project priority
   - [x] Project tags
   - [ ] Visibility/access strategy
-  - [ ] Health score persistence or derived strategy
+  - [x] Health score persistence or derived strategy
 - [x] Milestone veri modeli eklenecek
 - [x] Risk register veri modeli eklenecek
 - [ ] Team capacity/workload veri modeli eklenecek
@@ -89,8 +89,8 @@ Bu liste Synorq'u "PM shell" seviyesinden "delivery control system" seviyesine t
   - [x] Team
   - [x] Permissions
   - [x] Notifications
-  - [ ] Integrations
-  - [ ] Billing
+  - [x] Integrations
+  - [x] Billing
   - [x] Security
 - [ ] Project detail sayfasi yeniden yapilandirilacak
   - [x] Overview

@@ -6,15 +6,19 @@ import {
   BellRing,
   Building2,
   ChevronRight,
+  CreditCard,
+  Link2,
   KeyRound,
   LogOut,
   Mail,
   PanelsTopLeft,
+  Receipt,
   ShieldCheck,
   ShieldPlus,
   User,
   UserPlus,
   Users,
+  Webhook,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -33,7 +37,7 @@ type MemberRecord = {
   };
 };
 
-type TabId = "workspace" | "profile" | "team" | "permissions" | "notifications" | "security";
+type TabId = "workspace" | "profile" | "team" | "permissions" | "notifications" | "integrations" | "billing" | "security";
 
 type Props = {
   initialWorkspace: {
@@ -81,6 +85,8 @@ const tabs: Array<{
   { id: "team", label: "Team", description: "Members and invites", icon: Users },
   { id: "permissions", label: "Permissions", description: "Roles and access policy", icon: ShieldPlus },
   { id: "notifications", label: "Notifications", description: "Signals and digest rules", icon: BellRing },
+  { id: "integrations", label: "Integrations", description: "Sync, hooks and providers", icon: Link2 },
+  { id: "billing", label: "Billing", description: "Seats, plan and usage posture", icon: CreditCard },
   { id: "security", label: "Security", description: "Session and audit trail", icon: ShieldCheck },
 ];
 
@@ -847,6 +853,130 @@ export default function SettingsConsole({
                 </div>
               </div>
             </section>
+          )}
+
+          {activeTab === "integrations" && (
+            <div className="space-y-6">
+              <section className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
+                <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-700">
+                    <Link2 size={13} />
+                    Integration readiness
+                  </div>
+                  <h2 className="mt-3 text-xl font-black text-slate-950">Delivery stack connection posture</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Slack, Calendar ve webhook kanallari icin operasyon hazirlik cizgisi burada tutulur. v1 katmani governance,
+                    routing ve event modelini hazirlar.
+                  </p>
+
+                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                    <SnapshotCard label="Slack" value="Ready for policy" note="Action Required ve digest akisi icin aday kanal." />
+                    <SnapshotCard label="Calendar" value="Timeline-aware" note="Due date ve milestone sync modeli hazir." />
+                    <SnapshotCard label="Webhooks" value="Event-driven" note="Audit ve activity event'leri hook katmanina uygun." />
+                  </div>
+
+                  <div className="mt-6 space-y-3">
+                    <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+                      <div className="flex items-center gap-2 text-sm font-black text-slate-950">
+                        <Webhook size={16} className="text-cyan-600" />
+                        Event contract
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        `project.updated`, `task.assignee_changed`, `risk.created` ve `export.created` event'leri entegrasyon
+                        katmanina tasinabilecek normalized audit akisini olusturur.
+                      </p>
+                    </div>
+                    <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
+                      <div className="text-sm font-black text-slate-950">Recommended rollout</div>
+                      <div className="mt-2 text-sm leading-6 text-slate-600">
+                        1. Slack action required routing
+                        <br />
+                        2. Calendar milestone sync
+                        <br />
+                        3. Webhook/API key automation surface
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="text-sm font-semibold text-slate-950">Integration guardrails</div>
+                    <div className="mt-4 space-y-3">
+                      <SnapshotCard label="Notification source" value="Workspace state" note="Rule toggles Settings ve Notification Console ile ortak çalışır." />
+                      <SnapshotCard label="Audit trace" value="Required" note="Her entegrasyon aksiyonu audit timeline'a düşecek şekilde tasarlanır." />
+                      <SnapshotCard label="Access model" value={canManageWorkspace ? "Admin-managed" : "Restricted"} note="Baglanti aktivasyonu owner/admin katmaninda tutulur." />
+                    </div>
+                  </div>
+
+                  <div className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+                    <div className="text-sm font-semibold text-white">What ships next</div>
+                    <ul className="mt-5 space-y-3 text-sm text-slate-200">
+                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Slack escalation routing for critical risk and overdue delivery signals.</li>
+                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Google Calendar sync for milestone and due-date windows.</li>
+                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Webhook/API key layer for outbound workflow automation.</li>
+                    </ul>
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {activeTab === "billing" && (
+            <div className="space-y-6">
+              <section className="grid gap-6 lg:grid-cols-[1.04fr_0.96fr]">
+                <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                    <CreditCard size={13} />
+                    Billing posture
+                  </div>
+                  <h2 className="mt-3 text-xl font-black text-slate-950">Seat, plan ve usage kontrol katmani</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    v1'de faturalama akisi aktif degil; fakat owner/admin katmani icin seat governance, plan guardrail ve
+                    usage okunurlugu bu yuzeyde modellenir.
+                  </p>
+
+                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                    <MetricCard label="Plan posture" value="Workspace beta" note="Commercial controls sonraki rollout katmaninda acilacak." />
+                    <MetricCard label="Seat baseline" value={String(teamSummary.total)} note={`${teamSummary.viewers} viewer, ${adminCount} elevated access`} />
+                    <MetricCard label="Billing owner" value={currentAccess.isOwner ? "You" : "Owner"} note="Workspace sahipligi commercial authority olarak tanimlanir." />
+                  </div>
+
+                  <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-center gap-2 text-sm font-black text-slate-950">
+                      <Receipt size={16} className="text-emerald-600" />
+                      Usage guardrails
+                    </div>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <SnapshotCard label="Member seats" value={`${teamSummary.total} active`} note="Ekip boyutu commercial seat metrikleri icin hazır." />
+                      <SnapshotCard label="Admin density" value={`${adminCount}`} note="Yonetici/yetki orani governance maliyetini etkiler." />
+                      <SnapshotCard label="Digest load" value={weeklyDigestEnabled ? "Enabled" : "Disabled"} note="Reporting seviyeleri gelecekte usage metriklerine bağlanabilir." />
+                      <SnapshotCard label="Export footprint" value="Tracked" note="Audit export aksiyonlari artik event olarak loglanir." />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="text-sm font-semibold text-slate-950">Commercial checkpoints</div>
+                    <div className="mt-4 space-y-3">
+                      <SnapshotCard label="Owner authority" value={currentAccess.isOwner ? "Active" : "Owner-only"} note="Plan ve invoice mutasyonlari owner seviyesinde tutulacak." />
+                      <SnapshotCard label="Member governance" value={canManageMembers ? "Managed" : "Observed"} note="Seat artisi team management akisindan izlenebilir." />
+                      <SnapshotCard label="Audit support" value="Enabled" note="Plan, export ve preference aksiyonlari audit kaydina dusuyor." />
+                    </div>
+                  </div>
+
+                  <div className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+                    <div className="text-sm font-semibold text-white">Billing roadmap</div>
+                    <ul className="mt-5 space-y-3 text-sm text-slate-200">
+                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Plan selection ve seat cap controls.</li>
+                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Invoice / usage timeline for workspace owner.</li>
+                      <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Role-aware billing mutation policy integrated with permissions.</li>
+                    </ul>
+                  </div>
+                </div>
+              </section>
+            </div>
           )}
 
           {activeTab === "security" && (

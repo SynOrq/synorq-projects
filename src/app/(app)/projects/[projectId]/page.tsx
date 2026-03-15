@@ -320,7 +320,11 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
           sections={project.sections}
           members={members}
           tasks={sortedTasks}
-          health={analyzedProject.health}
+          health={{
+            ...analyzedProject.health,
+            factors: analyzedProject.healthFactors,
+            strategy: analyzedProject.healthStrategy,
+          }}
           metrics={{
             openTasks: analyzedProject.openTasks,
             completedTasks: analyzedProject.completedTasks,
